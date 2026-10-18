@@ -14,8 +14,9 @@ reports them missing.
    commercial use). Optional: the YouTube secrets (`YT_CLIENT_ID`, `YT_CLIENT_SECRET`, `YT_REFRESH_TOKEN`;
    the person makes them in the browser by `skills/youtube-publishing/SKILL.md` → Credentials, then
    `bin/yt youtube whoami` confirms the channel; `YT_API_KEY`), `MEDIA_S3_*` and `FAL_KEY` — see the README's
-   Setup table. No model key is needed. Mint setup links with `kortix secrets request`; never ask for a key
-   in chat.
+   Setup table. No model key is needed. Mint setup links with
+   `kortix secrets request <NAME…> --scope runtime` (a connector secret never reaches the sandbox);
+   never ask for a key in chat.
 3. **Sandbox.** Every agent uses the `video` sandbox template (`Dockerfile.video`: ffmpeg, Chromium, bun,
    HyperFrames). It asks for 6 vCPU / 12 GB.
 4. **Check.** In a session on the `video` sandbox: `cd pipeline && bun install && bun test`, then

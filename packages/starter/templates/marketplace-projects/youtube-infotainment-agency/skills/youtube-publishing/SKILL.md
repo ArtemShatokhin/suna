@@ -28,8 +28,10 @@ Agents can't sign in to Google, so a person does steps 1–4; an agent does 5–
    channel is one) → on "Google hasn't verified this app": Advanced → Go to … → allow. Step 2:
    **Exchange authorization code for tokens** → copy the **Refresh token**. With your own
    credentials the Playground does not auto-revoke it.
-5. Mint a secrets link (`kortix secrets request YT_CLIENT_ID YT_CLIENT_SECRET YT_REFRESH_TOKEN`)
-   and give it to the person; they paste the values there, never in chat.
+5. Mint a secrets link (`kortix secrets request YT_CLIENT_ID YT_CLIENT_SECRET YT_REFRESH_TOKEN
+   --scope runtime`) and give it to the person; they paste the values there, never in chat.
+   `kortix secrets ls` must then show delivery **environment**. A connector secret never reaches
+   the sandbox and its delivery can't be switched: `kortix secrets unset` it and request again.
 6. `kortix secrets sync`, then `bin/yt youtube whoami`: it must name the intended channel.
 
 `YT_API_KEY` is optional: it lets `yt youtube search` run without the OAuth secrets. It adds no
