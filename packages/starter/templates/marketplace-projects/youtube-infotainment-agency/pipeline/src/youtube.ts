@@ -1,7 +1,7 @@
 /**
  * YouTube Data API v3 + Analytics API v2 over plain fetch. Video bytes go straight from the sandbox
  * (Kortix connectors cap payloads at 25 MiB / 60 s). OAuth scopes needed for the refresh token:
- *   youtube.upload, youtube.force-ssl, yt-analytics.readonly   (see scripts/youtube-oauth.ts)
+ *   youtube.upload, youtube.force-ssl, yt-analytics.readonly   (setup: skills/youtube-publishing/SKILL.md)
  */
 import { existsSync, statSync } from "node:fs";
 import { channel } from "./config";
@@ -29,6 +29,15 @@ async function api<T>(url: string, init: RequestInit & { token: string }): Promi
   const res = await fetch(url, { ...init, headers: { authorization: `Bearer ${init.token}`, ...init.headers } });
   if (!res.ok) throw new Error(`${init.method ?? "GET"} ${url.split("?")[0]} → ${res.status}: ${(await res.text()).slice(0, 800)}`);
   return (res.status === 204 ? undefined : await res.json()) as T;
+}
+
+/** The channel the refresh token publishes to: check it before the first upload. */
+export async function whoami() {
+  const token = await accessToken();
+  const res = await api<{ items?: { id: string; snippet: { title: string; customUrl?: string } }[] }>(`${API}/channels?part=snippet&mine=true`, { token });
+  const ch = res.items?.[0];
+  if (!ch) throw new Error("this Google account has no YouTube channel; mint the token signed in as the channel (or its Brand Account)");
+  return { id: ch.id, title: ch.snippet.title, handle: ch.snippet.customUrl };
 }
 
 function statusBody(pkg: Package, privacy: string, publishAt?: string) {

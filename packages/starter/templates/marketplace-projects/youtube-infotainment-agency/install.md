@@ -11,8 +11,9 @@ reports them missing.
    `kortix validate`; it must pass. Commit `skills/` and open a change request ("Install HyperFrames
    skills"). Sessions only see the skills once that change request is merged.
 2. **Secrets.** `ELEVENLABS_API_KEY` is required (a paid ElevenLabs plan; Starter or above allows
-   commercial use). Optional: the YouTube secrets (`YT_CLIENT_ID`, `YT_CLIENT_SECRET`, `YT_REFRESH_TOKEN`,
-   made with `bun scripts/youtube-oauth.ts`; `YT_API_KEY`), `MEDIA_S3_*` and `FAL_KEY` — see the README's
+   commercial use). Optional: the YouTube secrets (`YT_CLIENT_ID`, `YT_CLIENT_SECRET`, `YT_REFRESH_TOKEN`;
+   the person makes them in the browser by `skills/youtube-publishing/SKILL.md` → Credentials, then
+   `bin/yt youtube whoami` confirms the channel; `YT_API_KEY`), `MEDIA_S3_*` and `FAL_KEY` — see the README's
    Setup table. No model key is needed. Mint setup links with `kortix secrets request`; never ask for a key
    in chat.
 3. **Sandbox.** Every agent uses the `video` sandbox template (`Dockerfile.video`: ffmpeg, Chromium, bun,

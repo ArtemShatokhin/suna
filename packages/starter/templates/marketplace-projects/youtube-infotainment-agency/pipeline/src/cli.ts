@@ -79,6 +79,7 @@ Assembly, QA, packaging, publishing
   yt thumb scaffold <slug> --text ".." | yt thumb render <slug>
   yt sources <slug>                           sources.md + description.txt (chapters, sources, credit)
   yt media push|pull <slug>                   mirror media/ + final render to object storage
+  yt youtube whoami                           the channel the YT_* credentials publish to
   yt youtube search "<query>"                 existing coverage (originality research)
   yt youtube upload <slug>                    resumable upload as PRIVATE + captions + thumbnail
   yt youtube schedule <slug> --at <ISO> | --now
@@ -315,6 +316,7 @@ async function main() {
     }
 
     case "youtube": {
+      if (sub === "whoami") return out(await yt.whoami());
       if (sub === "search") return out(await yt.search(need(a1, "query"), flags.max ? Number(flags.max) : undefined));
       const slug = need(a1, "slug");
       if (sub === "upload") return out(await yt.upload(slug));
