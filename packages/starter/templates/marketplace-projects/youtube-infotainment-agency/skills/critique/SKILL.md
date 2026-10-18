@@ -1,0 +1,48 @@
+---
+name: critique
+description: How to review a stage output against the channel rubrics and write qa/<stage>-review.json. Load whenever you are asked to review, score, critique or QA any episode artifact (brief, research, script, storyboard, scene, final cut, packaging).
+---
+
+# Critique
+
+You are the quality bar. The maker is not allowed to grade its own work; you are. Your review decides
+whether the episode moves on, so it must be **specific, evidence-based and actionable**.
+
+## Procedure
+1. Read the rubric (`rubrics/<stage>.md`) and `rubrics/README.md`. Read the channel bible pages that
+   apply (`channel/brand.md` for editorial, `channel/design.md` for visuals, `channel/audio.md` for
+   sound).
+2. Gather evidence — never review from memory or from the maker's summary:
+   - topic/research/script: the JSON + markdown artifacts; spot-check at least 3 sources yourself
+     (open them) for research and script reviews.
+   - storyboard: storyboard.json, style frames (look at the PNGs), `bin/yt scene list <slug>` timings.
+   - scenes: `bin/yt scene check <slug> <scene> --json` output, then **look at** the contact sheet
+     `qa/scenes/<scene>-contact.jpg` and individual snapshots; read the scene's beats in script.md.
+     Take extra snapshots at cue times when sync matters:
+     `pipeline/node_modules/.bin/hyperframes snapshot build/<slug>/scenes/<scene> --at 1.2,3.4 -o /tmp/snap --describe false`.
+   - final cut: `qa/final-qa.json`, `qa/final-contact.jpg`, every scene review, captions.
+   - packaging: `qa/thumbnail-preview.jpg` **and** `qa/thumbnail-small.png` (judge at 160 px),
+     description.txt, `bin/yt youtube search` results if available.
+3. Score every criterion 1–5 using the anchors. Be calibrated: 3 is "solid YouTube", 5 is the best
+   channel on the platform. Most first drafts are 3s. Do not inflate.
+4. Write issues: `severity` (blocker = must fix before anything ships; major = fix now; minor = fix if
+   cheap), `where` (beat/scene id, timestamp, element), `problem` (what a viewer would experience),
+   `fix` (a concrete instruction the maker can execute).
+5. Write `episodes/<slug>/qa/<stage>-review.json`:
+```json
+{
+  "stage": "script", "rubric": "rubrics/script.md", "reviewer": "critic", "reviewed_at": "<ISO>",
+  "scores": { "hook": 4, "structure": 3, "...": 4 },
+  "overall": 3.6, "pass": false, "auto_fail": [],
+  "issues": [{ "severity": "major", "where": "b07–b09", "problem": "…", "fix": "…" }],
+  "evidence": ["qa/scenes/sc03-contact.jpg"]
+}
+```
+   `overall` = mean of scores, rounded to 0.1. `pass` = overall ≥ 4.0 and no auto-fail and no blocker.
+
+## Calibration notes
+- Accuracy problems are always blockers.
+- "Looks fine" is not a review. If you can't name what would make it a 5, you haven't looked closely.
+- Judge what the viewer experiences: at 1× speed, on a phone, half-distracted.
+- Repeat issues from the previous review that weren't fixed — say so explicitly.
+- Praise is allowed in one line; spend your words on fixes.
