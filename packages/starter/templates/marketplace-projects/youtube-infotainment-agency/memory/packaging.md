@@ -1,13 +1,12 @@
 # Packaging learnings (titles, thumbnails, descriptions)
 
-Evidence below is from `episodes/001-why-we-dont-feel-earth-spin/` (stage 7, Oct 2026); the measurement
-harness it cites is `qa/thumbnail-measure.py` + `qa/package-audit.py` in that episode (copy both to the
-next episode; they run offline with PIL + tesseract).
+Lessons from packaging a first episode (a 78 s explainer on why we don't feel Earth's spin). The checks
+below run offline with PIL + tesseract; build them as small scripts in the episode's `qa/` folder.
 
 ## Thumbnail legibility is measurable — do that instead of squinting
 
 - The binding constraint is the **~120 px mobile feed**, not 1280×720. At 120 px wide (scale 0.09375) a
-  display-font size of S px has cap height ≈ 0.72·S·0.09375; a packaging review of episode 001 wanted
+  display-font size of S px has cap height ≈ 0.72·S·0.09375; a packaging review wanted
   **cap ≥ 9 px and stroke ≥ 3 px at 120 px for every text run**, which is what the final card has
   (`FEELS LIKE` 140 px → 9 px cap / 5 px stroke; `0` 250 px → 17 px / 4 px; `km/h` 190 px → 13 px / 3 px).
   A 120 px label measured 8 px cap / 1.5 px stroke and was flagged as the weakest element even though it
@@ -35,22 +34,22 @@ next episode; they run offline with PIL + tesseract).
   measured speed, the thumbnail the inversion (`FEELS LIKE 0 km/h`, the film's own sc07 readout). The
   packaging rubric's "complements, not repeats" is enforceable — check for shared tokens.
 - A number in the title is only honest with its condition. `1,674 km/h` is the *equatorial* speed
-  (c01 says the speed is lower at higher latitudes). Rev 1 of the 001 package was **blocked** on
+  (c01 says the speed is lower at higher latitudes). The first package was **blocked** on
   "You're Moving at 1,674 km/h" — ~40% high at 51°N — even though the film says the same thing with
   "if you're near the equator" and labels the on-screen readout "at the equator". The film qualifying a
   figure on screen does **not** license the title to drop the qualifier: the title is the most-read
   sentence the channel publishes. "up to 1,674 km/h" (the equatorial maximum) is strictly true
-  everywhere and costs nothing; `qa/package-audit.py` now asserts it explicitly.
+  everywhere and costs nothing; the package audit should assert it explicitly.
 - Put the subject noun in the title **or** the description's first three paragraphs. A package can be
-  perfectly accurate and never say what the video is about — the 001 rev 1 review scored that as
+  perfectly accurate and never say what the video is about — the review scored that as
   discoverability (4/5) and noted that tags carry almost no ranking weight.
-- Keep each rationale's character count honest: recompute it and assert it (`qa/package-audit.py` checks
+- Keep each rationale's character count honest: recompute it and assert it (a package audit asserts
   `"N chars." == len(text)` for every title). A human checks the 60-char limit against that number.
 
 ## Description & disclosure
 
 - Audit the copy mechanically: extract every numeric token from title/description/thumbnail text and
-  match it to a verified claim id (`qa/package-audit.py` does this, plus banned words and chapter rules).
+  match it to a verified claim id (a package audit script does this, plus banned words and chapter rules).
   It caught a real over-claim in this episode: writing "…cancels 0.3% of gravity's pull, **which is why
   you weigh a little less at the poles**" quietly attributes the whole 0.53% pole/equator gravity gap to
   the spin, when the film's own caption says "spin + Earth's shape". Cut the clause or spell out both
@@ -61,13 +60,10 @@ next episode; they run offline with PIL + tesseract).
   and the generated score in the description credit line instead, since the YouTube flag only covers
   realistic synthetic depictions.
 - Chapters can only come from the script's `chapter` fields (`yt sources` reads `03-script/script.json`,
-  which the package stage may not edit). This episode's 3 chapters (0:00 / 0:34 / 0:54, gaps 34.97 /
-  19.03 / 24.28 s) met YouTube's rules, but the twist beat at 0:44.6 had no chapter of its own — if the
-  gate wants one, the script file has to change first (and `yt episode reopen … script` invalidates the
-  voice + render — do not reopen a frozen 4.7/5 cut for a label).
+  which the package stage may not edit). A chapter the script didn't mark can't be added at
+  packaging: the script file has to change first, and `yt episode reopen … script` invalidates the voice
+  and render — don't reopen a finished cut for a label.
 - **Chapter labels must never land before the beat they name.** `mmss()` in `pipeline/src/sources.ts`
-  floors, so a beat at 34.97 s printed `00:34`, ~1 s early into the previous scene; the fix (shared
-  pipeline, all episodes) is a `mmssChapter = Math.ceil` label used by `description()` while the sources
-  page's claim timestamps keep the floored form (half a second either way is not a content boundary).
-  The ≥10 s rule is still evaluated on raw times. `qa/package-audit.py` parses the *published* chapter
-  block out of `description.txt` and asserts `0 ≤ printed − raw < 1 s`.
+  floors, so a beat at 34.97 s printed `00:34`, ~1 s early into the previous scene; the pipeline now
+  rounds chapter labels up (`mmssChapter` in `description()`), while the sources page's claim timestamps
+  keep the floored form. The ≥10 s rule is still evaluated on raw times.

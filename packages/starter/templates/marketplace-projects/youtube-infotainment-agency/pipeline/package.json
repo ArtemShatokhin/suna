@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "Deterministic plumbing for the kortix-YT-infotainment edutainment pipeline (the `yt` CLI agents call).",
+  "description": "Deterministic plumbing for the YouTube Infotainment Agency edutainment pipeline (the `yt` CLI agents call).",
   "bin": { "yt": "./src/cli.ts" },
   "scripts": {
     "yt": "bun src/cli.ts",

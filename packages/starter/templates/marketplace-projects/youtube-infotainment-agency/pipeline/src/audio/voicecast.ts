@@ -1,6 +1,6 @@
 /**
- * Per-episode narrator casting (the channel owner's decision, 17 Oct 2026: no channel-wide voice, no human
- * voice gate). The sound-editor searches the ElevenLabs Voice Library by the channel's casting rule
+ * Per-episode narrator casting (no channel-wide voice, no human voice gate). The sound-editor searches
+ * the ElevenLabs Voice Library by the channel's casting rule
  * (`channel.yaml → voice.casting`: language, use case, sort, model, plus the filters below), picks the
  * eligible voice that best fits the episode, and adopts it with a reason. The cast lives in the episode
  * (`03-script/voice.json`); `channel.yaml` holds only the rule.

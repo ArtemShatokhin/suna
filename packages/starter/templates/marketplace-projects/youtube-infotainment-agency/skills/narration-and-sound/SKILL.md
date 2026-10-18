@@ -8,7 +8,7 @@ description: Produce narration (TTS per beat → locked timing.json), the music 
 Read `channel/audio.md` first.
 
 ## Casting — this episode's narrator (first step of every voice stage)
-There is no channel-wide voice (the channel owner's decision, 17 Oct 2026): each episode gets the narrator
+There is no channel-wide voice: each episode gets the narrator
 that fits it, chosen by you, with no human gate. The rule that bounds the choice lives in
 `channel/channel.yaml → voice.casting` (language, Voice Library use case, sort, model — Eleven v4).
 1. `bin/yt cast library <slug>` — writes `03-script/voice-candidates.json`: eligible Voice Library

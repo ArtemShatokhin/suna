@@ -1,6 +1,6 @@
 # Channel configuration read by the `yt` CLI (pipeline/src/config.ts).
 # Creative identity lives in brand.md / design.md / audio.md next to this file.
-name: "Mote" # working channel name; rename freely
+name: "Mote" # example channel name (and kit mascot); rename for your channel
 niche: "science explainers — physics, biology, space, how things work"
 language: en
 
@@ -19,7 +19,7 @@ voice:
     similarity_boost: 0.75
     style: 0.3
     speed: 1.0
-  casting: # the rule the sound-editor casts each episode's narrator by (owner's decision, 17 Oct 2026): eligible Voice Library voices, chosen per episode, no channel-wide voice, no human gate
+  casting: # the rule the sound-editor casts each episode's narrator by: eligible Voice Library voices, chosen per episode, no channel-wide voice, no human gate
     language: en
     use_case: narrative_story # the Voice Library's narration category
     sort: usage_character_count_1y # candidates listed most-used first

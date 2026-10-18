@@ -1,6 +1,6 @@
 # yaml-language-server: $schema=https://kortix.com/schema/kortix.v2.schema.json
 #
-# kortix-YT-infotainment — an agent loop that researches, writes, animates, voices, packages and
+# YouTube Infotainment Agency — an agent loop that researches, writes, animates, voices, packages and
 # publishes science explainers at the Kurzgesagt / Veritasium quality bar.
 #
 #   agents/<name>.md        behaviour (frontmatter + system prompt)   ← one agent per production role
@@ -25,9 +25,8 @@ project:
   description: Automated, research-first edutainment YouTube pipeline (HyperFrames code-rendered animation).
 
 env:
-  required: [ELEVENLABS_API_KEY]   # agents use the project's default Kortix model; ANTHROPIC_API_KEY is optional
+  required: [ELEVENLABS_API_KEY]   # agents use the project's default Kortix model; no model key is needed
   optional:
-    - ANTHROPIC_API_KEY         # optional: only if you connect Anthropic as the model provider
     - YT_CLIENT_ID              # YouTube OAuth client (scripts/youtube-oauth.ts)
     - YT_CLIENT_SECRET
     - YT_REFRESH_TOKEN          # scopes: youtube.upload, youtube.force-ssl, yt-analytics.readonly
@@ -38,12 +37,9 @@ env:
     - MEDIA_S3_SECRET_ACCESS_KEY
     - MEDIA_S3_PREFIX
     - FAL_KEY                   # generative b-roll (off by default: channel.yaml → broll.enabled)
-    - OPENAI_API_KEY            # optional: image-model thumbnail experiments
-    - GEMINI_API_KEY            # optional: `hyperframes snapshot --describe` vision notes for the critic
 
-# Rendering is CPU-only (Kortix has no GPU sandboxes): headless Chrome + ffmpeg scale with vCPUs.
-# Measured: 10 s of 1080p30 renders in ~26 s on 4 vCPU (software GPU). 6 vCPU is the provider's
-# per-sandbox maximum (build error "CPU request 8 exceeds maximum allowed per sandbox (6)").
+# Rendering is CPU-only (headless Chrome + ffmpeg scale with vCPUs): 10 s of 1080p30 renders in ~26 s
+# on 4 vCPU. 6 vCPU / 12 GB fits common sandbox-provider limits; raise both if your provider allows.
 sandbox:
   default: video
   templates:
@@ -51,7 +47,7 @@ sandbox:
       name: Video production (Node 22, HyperFrames, Chrome, ffmpeg)
       dockerfile: Dockerfile.video
       cpu: 6
-      memory: 16
+      memory: 12
       disk: 60
 
 agents:
@@ -59,9 +55,7 @@ agents:
   showrunner:
     file: agents/showrunner.md
     # Runs whole episodes: dispatches stage subagents (same sandbox), so it holds every secret they use.
-    secrets: [ANTHROPIC_API_KEY, ELEVENLABS_API_KEY, YT_CLIENT_ID, YT_CLIENT_SECRET, YT_REFRESH_TOKEN, YT_API_KEY,
-      MEDIA_S3_ENDPOINT, MEDIA_S3_BUCKET, MEDIA_S3_ACCESS_KEY_ID, MEDIA_S3_SECRET_ACCESS_KEY, MEDIA_S3_PREFIX,
-      FAL_KEY, OPENAI_API_KEY, GEMINI_API_KEY]
+    secrets: [ELEVENLABS_API_KEY, YT_CLIENT_ID, YT_CLIENT_SECRET, YT_REFRESH_TOKEN, YT_API_KEY, MEDIA_S3_ENDPOINT, MEDIA_S3_BUCKET, MEDIA_S3_ACCESS_KEY_ID, MEDIA_S3_SECRET_ACCESS_KEY, MEDIA_S3_PREFIX, FAL_KEY]
     skills: [showrunner-loop, kortix-cli, agent-browser]
     kortix_permissions: [project.read, project.session.read, project.session.start, project.review.read,
       project.review.submit, project.gitops.read, project.gitops.push, project.gitops.ref.any, project.trigger.read,
@@ -69,62 +63,57 @@ agents:
 
   critic:
     file: agents/critic.md
-    secrets: [ANTHROPIC_API_KEY, GEMINI_API_KEY]
     skills: [critique, agent-browser]
 
   # ── 1 · Topic choice & editorial framing ────────────────────────────────────
   topic-scout:
     file: agents/topic-scout.md
-    secrets: [ANTHROPIC_API_KEY, YT_API_KEY, YT_CLIENT_ID, YT_CLIENT_SECRET, YT_REFRESH_TOKEN]
+    secrets: [YT_API_KEY, YT_CLIENT_ID, YT_CLIENT_SECRET, YT_REFRESH_TOKEN]
     skills: [editorial-framing, agent-browser]
 
   # ── 2 · Research & reporting ────────────────────────────────────────────────
   researcher:
     file: agents/researcher.md
-    secrets: [ANTHROPIC_API_KEY]
     skills: [research-dossier, agent-browser]
 
   fact-checker:
     file: agents/fact-checker.md
-    secrets: [ANTHROPIC_API_KEY]
     skills: [claim-verification, agent-browser]
 
   # ── 3 · Script writing & structure ──────────────────────────────────────────
   scriptwriter:
     file: agents/scriptwriter.md
-    secrets: [ANTHROPIC_API_KEY]
     skills: [edutainment-scriptwriting]
 
   # ── 4 · Visual concepting & set design ──────────────────────────────────────
   art-director:
     file: agents/art-director.md
-    secrets: [ANTHROPIC_API_KEY, FAL_KEY, GEMINI_API_KEY]
+    secrets: [FAL_KEY]
     skills: [art-direction, scene-animation, hyperframes, hyperframes-creative, hyperframes-core, hyperframes-registry]
 
   # ── 5 · 2D/3D animation ─────────────────────────────────────────────────────
   animator:
     file: agents/animator.md
-    secrets: [ANTHROPIC_API_KEY, FAL_KEY, GEMINI_API_KEY]
+    secrets: [FAL_KEY]
     skills: [scene-animation, hyperframes, hyperframes-core, hyperframes-animation, hyperframes-keyframes,
       hyperframes-registry, hyperframes-cli, hyperframes-creative]
 
   # ── 6 · Editing, sound & music ──────────────────────────────────────────────
   sound-editor:
     file: agents/sound-editor.md
-    secrets: [ANTHROPIC_API_KEY, ELEVENLABS_API_KEY]
+    secrets: [ELEVENLABS_API_KEY]
     skills: [narration-and-sound, hyperframes-audio]
 
   # ── 7 · Thumbnails & packaging ──────────────────────────────────────────────
   packager:
     file: agents/packager.md
-    secrets: [ANTHROPIC_API_KEY, OPENAI_API_KEY, YT_API_KEY, YT_CLIENT_ID, YT_CLIENT_SECRET, YT_REFRESH_TOKEN]
+    secrets: [YT_API_KEY, YT_CLIENT_ID, YT_CLIENT_SECRET, YT_REFRESH_TOKEN]
     skills: [packaging, scene-animation, hyperframes-core]
 
   # ── 8 · Publication, sources & follow-through ───────────────────────────────
   publisher:
     file: agents/publisher.md
-    secrets: [ANTHROPIC_API_KEY, YT_CLIENT_ID, YT_CLIENT_SECRET, YT_REFRESH_TOKEN, MEDIA_S3_ENDPOINT,
-      MEDIA_S3_BUCKET, MEDIA_S3_ACCESS_KEY_ID, MEDIA_S3_SECRET_ACCESS_KEY, MEDIA_S3_PREFIX]
+    secrets: [YT_CLIENT_ID, YT_CLIENT_SECRET, YT_REFRESH_TOKEN, MEDIA_S3_ENDPOINT, MEDIA_S3_BUCKET, MEDIA_S3_ACCESS_KEY_ID, MEDIA_S3_SECRET_ACCESS_KEY, MEDIA_S3_PREFIX]
     skills: [youtube-publishing, post-mortem, kortix-cli]
     kortix_permissions: [project.read, project.review.read, project.review.submit, project.gitops.read,
       project.gitops.push, project.gitops.ref.any]

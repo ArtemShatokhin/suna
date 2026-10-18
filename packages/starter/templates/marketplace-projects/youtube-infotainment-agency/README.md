@@ -33,17 +33,28 @@ https://github.com/ArtemShatokhin/kortix-YT-infotainment/blob/main/docs/demo/ep0
 | `critic` | scores every stage against `rubrics/` |
 
 ## Setup
-1. Add `ELEVENLABS_API_KEY` (a paid ElevenLabs plan: Starter or above allows commercial use):
-   `kortix secrets set ELEVENLABS_API_KEY=-`.
-2. Optional: YouTube OAuth (`YT_CLIENT_ID`, `YT_CLIENT_SECRET`, `YT_REFRESH_TOKEN` via
-   `bun scripts/youtube-oauth.ts`) to publish, and `MEDIA_S3_*` (e.g. Cloudflare R2) so media survives
-   between sessions. Without object storage an episode must finish in the session that started it.
-3. The sessions use the `video` sandbox template (`Dockerfile.video`: ffmpeg, Chromium, bun, HyperFrames).
-4. The setup session downloads the eight HyperFrames skills the art-director and animator use
-   (`scripts/sync-hyperframes-skills.sh`, see `install.md`) and opens a change request for them;
-   approve it before the first episode.
-5. Start an episode: `kortix sessions new --agent showrunner -p "Start a new episode from the top of
-   episodes/backlog.md"`, then review the gates in the Kortix review inbox.
+Agents use the project's default Kortix model, so no model key is needed. Set secrets with
+`kortix secrets set NAME=-` (never paste keys into chat).
+
+| Secret | Needed for | Required? |
+|---|---|---|
+| `ELEVENLABS_API_KEY` | narration, music and sound effects. A paid plan (Starter or above allows commercial use) with Text to Speech, Sound Effects, Music and Voices (read, for Voice Library casting) | **yes** |
+| `YT_CLIENT_ID`, `YT_CLIENT_SECRET`, `YT_REFRESH_TOKEN` | uploading and analytics. A Google Cloud OAuth client; `bun scripts/youtube-oauth.ts` mints the refresh token | to publish |
+| `YT_API_KEY` | YouTube search during topic research (saves OAuth quota) | no |
+| `MEDIA_S3_ENDPOINT`, `MEDIA_S3_BUCKET`, `MEDIA_S3_ACCESS_KEY_ID`, `MEDIA_S3_SECRET_ACCESS_KEY`, `MEDIA_S3_PREFIX` | S3-compatible storage (e.g. Cloudflare R2) so narration, music and renders survive between sessions. Without it an episode must finish in the session that started it | no |
+| `FAL_KEY` | generative b-roll, off by default (`channel.yaml → broll.enabled`) | no |
+
+Then:
+1. **Sandbox.** Every agent runs in the `video` template (`Dockerfile.video`: ffmpeg, Chromium, bun,
+   HyperFrames), 6 vCPU / 12 GB.
+2. **HyperFrames skills.** The setup session downloads the eight skills the art-director and animator use
+   (`scripts/sync-hyperframes-skills.sh`, see `install.md`) and opens a change request; approve it before
+   the first episode.
+3. **Your channel.** "Mote" is an example channel and mascot: edit `channel/` (brand, design, audio,
+   `channel.yaml`) and `episodes/backlog.md`. The `rates` in `channel.yaml` are cost estimates for the
+   spend ledger; check them against your plans.
+4. **Start an episode:** `kortix sessions new --agent showrunner -p "Start a new episode from the top of
+   episodes/backlog.md"`, then review the gates in the Kortix review inbox. Triggers ship disabled.
 
 Try the pipeline offline first: `cd pipeline && bun install && bun test`, then `bin/yt smoke` renders a
 22-second QA'd episode with stub voice and music.
