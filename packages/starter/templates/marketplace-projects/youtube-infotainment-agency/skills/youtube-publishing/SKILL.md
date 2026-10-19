@@ -11,44 +11,25 @@ description: Upload an approved episode to YouTube privately with captions, thum
 - Credentials: `YT_CLIENT_ID`, `YT_CLIENT_SECRET`, `YT_REFRESH_TOKEN` in the environment, and
   `bin/yt youtube whoami` names the intended channel. Missing? Follow **Credentials** below.
 
-## Credentials (one-time, done by a person in the browser)
-Agents can't sign in to Google, so a person does steps 0–4; an agent does 5–6.
-0. **The channel comes first.** Create it on youtube.com (Create a channel) with the Google account
-   used in step 4, or as a Brand Account. For custom thumbnails, also verify it by phone at
-   youtube.com/verify: YouTube refuses custom thumbnails from Studio and from the API until then.
-   One number verifies at most 2 channels a year; try both text and voice call, and another
-   carrier's number if no code arrives. Unverified channels can still upload; YouTube then shows a
-   frame it picks.
-1. console.cloud.google.com → new project → APIs & Services → Library: enable **YouTube Data API
-   v3** and **YouTube Analytics API**.
-2. Google Auth Platform → **Branding**: app name and support email. **Audience**: External, then
-   **Publish app** (In production). An app left in Testing gets a refresh token that expires after
-   7 days. Verification is not needed for your own channel.
-3. **Clients** → Create client → **Web application**, authorized redirect URI
-   `https://developers.google.com/oauthplayground`. Keep the client ID and secret. A
-   `redirect_uri_mismatch` right after creating it means wait a few minutes.
-4. developers.google.com/oauthplayground → gear icon → tick **Use your own OAuth credentials**
-   (OAuth flow Server-side, access type Offline) and paste the ID and secret. Step 1: paste
-   `https://www.googleapis.com/auth/youtube.upload https://www.googleapis.com/auth/youtube.force-ssl https://www.googleapis.com/auth/yt-analytics.readonly`
-   into the scope box → **Authorize APIs** → sign in as the channel (pick the Brand Account if the
-   channel is one) → on "Google hasn't verified this app": Advanced → Go to … → allow. Step 2:
-   **Exchange authorization code for tokens** → copy the **Refresh token**. With your own
-   credentials the Playground does not auto-revoke it.
-5. Mint a secrets link (`kortix secrets request YT_CLIENT_ID YT_CLIENT_SECRET YT_REFRESH_TOKEN
-   --scope runtime`) and give it to the person; they paste the values there, never in chat.
-   `kortix secrets ls` must then show delivery **environment**. A connector secret never reaches
-   the sandbox and its delivery can't be switched: `kortix secrets unset` it and request again.
-6. `kortix secrets sync`, then `bin/yt youtube whoami`: it must name the intended channel.
+## Credentials (one-time)
+A person makes `YT_CLIENT_ID`, `YT_CLIENT_SECRET` and `YT_REFRESH_TOKEN` in the browser; agents can't sign
+in to Google. The steps are in `README.md` → **YouTube publishing setup** (steps 1–7): walk the person
+through them one step at a time, starting at step 1 (the channel must exist first). Your part:
+- Mint the secrets link: `kortix secrets request YT_CLIENT_ID YT_CLIENT_SECRET YT_REFRESH_TOKEN
+  --scope runtime`, and give it to the person; they paste the values there, never in chat.
+- `kortix secrets ls` must then show delivery **environment**. A connector secret never reaches the
+  sandbox and its delivery can't be switched: `kortix secrets unset` it and request again.
+- `kortix secrets sync`, then `bin/yt youtube whoami`: it must name the intended channel.
 
 `YT_API_KEY` is optional: it lets `yt youtube search` run without the OAuth secrets. It adds no
 quota, because quota belongs to the Cloud project.
 
 ## Troubleshooting
 - `OAuth refresh 400 … invalid_grant`: the token was revoked, or the app is still in Testing
-  (7-day expiry). Ask a person to redo step 4 (and step 2 if needed); don't retry.
+  (7-day expiry). Ask a person to redo README setup step 5 (and step 3 if needed); don't retry.
 - `whoami` says `this Google account has no YouTube channel`: the token works, but that account has
-  no channel. Create it on the same account (step 0) and rerun `whoami`; the same token then finds
-  it. A Brand Account channel needs a new token with that account picked in step 4.
+  no channel. Create it on the same account (README setup step 1) and rerun `whoami`; the same token
+  then finds it. A Brand Account channel needs a new token with that account picked in step 5.
 - Quota (Google defaults, Oct 2026): 100 uploads and 100 searches per day per Cloud project; other
   calls share 10,000 units per day.
 
@@ -58,7 +39,7 @@ bin/yt media push <slug>                         # archive media + final cut (if
 bin/yt youtube upload <slug>                     # PRIVATE upload + captions (SRT) + thumbnail
 ```
 `upload` writes `08-publish/publish.json` (video id/url) and refuses to upload twice. A 403 on the
-thumbnail means the channel isn't phone-verified (Credentials step 0) — report it, don't retry.
+thumbnail means the channel isn't phone-verified (README setup step 1) — report it, don't retry.
 There is no thumbnail-only command: after verification a person sets `media/thumbnail.png` in
 YouTube Studio.
 

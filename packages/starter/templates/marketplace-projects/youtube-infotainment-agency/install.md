@@ -16,9 +16,9 @@ reports them missing.
    Mint setup links with `kortix secrets request <NAME…> --scope runtime` (a connector secret never
    reaches the sandbox); never ask for a key in chat.
    - **YouTube publishing.** Ask whether the person wants the agency to publish. If yes, take them
-     through `skills/youtube-publishing/SKILL.md` → Credentials one step at a time, starting at
-     step 0: the channel must already exist on the account they will sign in with, and custom
-     thumbnails need it phone-verified at youtube.com/verify. Mint the secrets link with
+     through `README.md` → **YouTube publishing setup** one step at a time, starting at step 1:
+     the channel must already exist on the account they will sign in with, and custom thumbnails
+     need it phone-verified at youtube.com/verify. Mint the secrets link with
      `--scope runtime`, check that `kortix secrets ls` shows delivery environment, then run
      `bin/yt youtube whoami` and show them the channel name. If they skip it, tell them uploads stay
      off until these secrets are set.

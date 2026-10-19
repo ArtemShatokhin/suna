@@ -1,4 +1,4 @@
-# {{projectName}} — YouTube Infotainment Agency
+# YouTube Infotainment Agency
 
 An agent studio for **science-explainer YouTube videos** in the Kurzgesagt / Veritasium style. A showrunner
 drives eleven specialised agents through the whole production, a critic scores every stage against a
@@ -16,9 +16,6 @@ rubric, and a person approves the topic, script, storyboard and final cut.
   description may use them; each video ships a sources page.
 - **Deterministic plumbing**: the `yt` CLI (`pipeline/`, TypeScript on bun) owns the episode state machine,
   validation, timing, render, mix (−14 LUFS), QA, packaging and YouTube upload.
-
-Demo — an episode made end to end by these agents (83 s):
-https://github.com/ArtemShatokhin/kortix-YT-infotainment/blob/main/docs/demo/ep001-why-we-dont-feel-earth-spin.mp4
 
 ## Agents
 | Agent | Stage |
@@ -39,7 +36,7 @@ Agents use the project's default Kortix model, so no model key is needed. Set se
 | Secret | Needed for | Required? |
 |---|---|---|
 | `ELEVENLABS_API_KEY` | narration, music and sound effects. A paid plan (Starter or above allows commercial use) with Text to Speech, Sound Effects, Music and Voices (read, for Voice Library casting) | **yes** |
-| `YT_CLIENT_ID`, `YT_CLIENT_SECRET`, `YT_REFRESH_TOKEN` | uploading and analytics. Create the YouTube channel first, and phone-verify it at youtube.com/verify for custom thumbnails. Then make the three values in the browser (Google Cloud + OAuth Playground) by [skills/youtube-publishing/SKILL.md](skills/youtube-publishing/SKILL.md#credentials-one-time-done-by-a-person-in-the-browser) → Credentials; `bin/yt youtube whoami` confirms the channel | to publish |
+| `YT_CLIENT_ID`, `YT_CLIENT_SECRET`, `YT_REFRESH_TOKEN` | uploading and analytics. Made once in the browser: see **YouTube publishing setup** below | to publish |
 | `YT_API_KEY` | YouTube search during topic research without the OAuth secrets | no |
 | `MEDIA_S3_ENDPOINT`, `MEDIA_S3_BUCKET`, `MEDIA_S3_ACCESS_KEY_ID`, `MEDIA_S3_SECRET_ACCESS_KEY`, `MEDIA_S3_PREFIX` | S3-compatible storage (e.g. Cloudflare R2) so narration, music and renders survive between sessions. Without it an episode must finish in the session that started it | no |
 | `FAL_KEY` | generative b-roll, off by default (`channel.yaml → broll.enabled`) | no |
@@ -59,7 +56,49 @@ Then:
 Try the pipeline offline first: `cd pipeline && bun install && bun test`, then `bin/yt smoke` renders a
 22-second QA'd episode with stub voice and music.
 
+## YouTube publishing setup (optional)
+Publishing needs three secrets: `YT_CLIENT_ID`, `YT_CLIENT_SECRET` and `YT_REFRESH_TOKEN`. You make them
+once, in the browser (about 15 minutes). Without them the agency still makes episodes but can't upload
+them.
+
+1. **Create the YouTube channel first.** On youtube.com, signed in with the Google account you will use in
+   step 5, choose *Create a channel* (or use a Brand Account channel). For custom thumbnails, verify the
+   channel by phone at youtube.com/verify: until then YouTube refuses custom thumbnails from Studio and
+   from the API, and shows a frame it picks. One phone number verifies at most 2 channels a year; if no
+   code arrives, try the voice call option or another carrier's number.
+2. **Create a Google Cloud project.** At console.cloud.google.com, create a project, then under
+   *APIs & Services → Library* enable **YouTube Data API v3** and **YouTube Analytics API**.
+3. **Set up the Google Auth Platform.** *Branding*: an app name and a support email. *Audience*:
+   **External**, then click **Publish app** so the status reads *In production*. An app left in *Testing*
+   gets a refresh token that expires after 7 days. Google's app verification is not needed to publish to
+   your own channel.
+4. **Create the OAuth client.** *Clients → Create client →* **Web application**, with the authorized
+   redirect URI `https://developers.google.com/oauthplayground`. Keep the client ID and the client secret.
+   A `redirect_uri_mismatch` error right after creating it means wait a few minutes.
+5. **Get the refresh token.** Open developers.google.com/oauthplayground. Click the gear icon, tick
+   **Use your own OAuth credentials** (OAuth flow *Server-side*, access type *Offline*) and paste the
+   client ID and secret. In *Step 1*, paste these three scopes into the box and click **Authorize APIs**:
+   `https://www.googleapis.com/auth/youtube.upload https://www.googleapis.com/auth/youtube.force-ssl https://www.googleapis.com/auth/yt-analytics.readonly`.
+   Sign in with the channel's account (pick the Brand Account if the channel is one). On *Google hasn't
+   verified this app*, click *Advanced → Go to …* and allow all three permissions. In *Step 2*, click
+   **Exchange authorization code for tokens** and copy the **Refresh token**. Because you used your own
+   credentials, the Playground does not revoke it.
+6. **Store the three values.** Paste them into a Kortix secrets link (an agent creates one with
+   `kortix secrets request YT_CLIENT_ID YT_CLIENT_SECRET YT_REFRESH_TOKEN --scope runtime`), or run
+   `kortix secrets set YT_CLIENT_ID=-` and paste the value (the same for the other two). Never paste them
+   into chat. `kortix secrets ls` must show delivery **environment** for all three: a *connector* secret
+   never reaches the agents' sandbox and can't be switched, so remove it with `kortix secrets unset` and
+   store it again.
+7. **Check.** Run `bin/yt youtube whoami` in a session, or ask an agent to. It prints the channel's name.
+   "No YouTube channel" means the step 5 account has no channel yet: create it (step 1) and check again;
+   the same token then works.
+
+`YT_API_KEY` is optional: it only lets topic research search YouTube without the three secrets. Uploads
+always start private, and only after a person approves the episode's final review.
+
 ## Known limits
-- The default Kortix models can't see images or hear audio: the critic checks visuals by measurement and
-  OCR and narration with `yt voice report`, not by eye or ear. An audio/vision-capable reviewer would help.
+- The default models read images, so the critic reviews snapshots and contact sheets. None of them takes
+  audio, so narration and the mix are judged by measurement (`yt voice report`, loudness, silence), not by
+  ear. A person should listen before approving the final review. An audio-capable reviewer (for example a
+  Gemini key behind a `yt listen` tool) would close that gap.
 - Nothing is published without a human approving the final gate, and uploads start private.
