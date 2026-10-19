@@ -59,7 +59,9 @@ agents:
     skills: [showrunner-loop, kortix-cli, agent-browser]
     kortix_permissions: [project.read, project.session.read, project.session.start, project.review.read,
       project.review.submit, project.gitops.read, project.gitops.push, project.gitops.ref.any, project.trigger.read,
-      project.file.read, project.usage.read]
+      project.file.read, project.usage.read,
+      # Setup: `kortix secrets request` (a link a person fills in) needs secret.write; `ls` needs read.
+      project.secret.read, project.secret.write]
 
   critic:
     file: agents/critic.md
