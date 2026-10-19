@@ -12,7 +12,13 @@ description: Upload an approved episode to YouTube privately with captions, thum
   `bin/yt youtube whoami` names the intended channel. Missing? Follow **Credentials** below.
 
 ## Credentials (one-time, done by a person in the browser)
-Agents can't sign in to Google, so a person does steps 1–4; an agent does 5–6.
+Agents can't sign in to Google, so a person does steps 0–4; an agent does 5–6.
+0. **The channel comes first.** Create it on youtube.com (Create a channel) with the Google account
+   used in step 4, or as a Brand Account. For custom thumbnails, also verify it by phone at
+   youtube.com/verify: YouTube refuses custom thumbnails from Studio and from the API until then.
+   One number verifies at most 2 channels a year; try both text and voice call, and another
+   carrier's number if no code arrives. Unverified channels can still upload; YouTube then shows a
+   frame it picks.
 1. console.cloud.google.com → new project → APIs & Services → Library: enable **YouTube Data API
    v3** and **YouTube Analytics API**.
 2. Google Auth Platform → **Branding**: app name and support email. **Audience**: External, then
@@ -40,6 +46,9 @@ quota, because quota belongs to the Cloud project.
 ## Troubleshooting
 - `OAuth refresh 400 … invalid_grant`: the token was revoked, or the app is still in Testing
   (7-day expiry). Ask a person to redo step 4 (and step 2 if needed); don't retry.
+- `whoami` says `this Google account has no YouTube channel`: the token works, but that account has
+  no channel. Create it on the same account (step 0) and rerun `whoami`; the same token then finds
+  it. A Brand Account channel needs a new token with that account picked in step 4.
 - Quota (Google defaults, Oct 2026): 100 uploads and 100 searches per day per Cloud project; other
   calls share 10,000 units per day.
 
@@ -49,7 +58,9 @@ bin/yt media push <slug>                         # archive media + final cut (if
 bin/yt youtube upload <slug>                     # PRIVATE upload + captions (SRT) + thumbnail
 ```
 `upload` writes `08-publish/publish.json` (video id/url) and refuses to upload twice. A 403 on the
-thumbnail means the channel isn't verified for custom thumbnails — report it, don't retry.
+thumbnail means the channel isn't phone-verified (Credentials step 0) — report it, don't retry.
+There is no thumbnail-only command: after verification a person sets `media/thumbnail.png` in
+YouTube Studio.
 
 Sources page: publish `08-publish/sources.md` where `channel.yaml → publish.sources_base_url` points
 (e.g. the repo's public mirror or a docs site). Put the final URL in `publish.json → sources_url`,

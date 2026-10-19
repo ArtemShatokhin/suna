@@ -39,7 +39,7 @@ Agents use the project's default Kortix model, so no model key is needed. Set se
 | Secret | Needed for | Required? |
 |---|---|---|
 | `ELEVENLABS_API_KEY` | narration, music and sound effects. A paid plan (Starter or above allows commercial use) with Text to Speech, Sound Effects, Music and Voices (read, for Voice Library casting) | **yes** |
-| `YT_CLIENT_ID`, `YT_CLIENT_SECRET`, `YT_REFRESH_TOKEN` | uploading and analytics. Made in the browser (Google Cloud + OAuth Playground): [skills/youtube-publishing/SKILL.md](skills/youtube-publishing/SKILL.md#credentials-one-time-done-by-a-person-in-the-browser) → Credentials; `bin/yt youtube whoami` confirms the channel | to publish |
+| `YT_CLIENT_ID`, `YT_CLIENT_SECRET`, `YT_REFRESH_TOKEN` | uploading and analytics. Create the YouTube channel first, and phone-verify it at youtube.com/verify for custom thumbnails. Then make the three values in the browser (Google Cloud + OAuth Playground) by [skills/youtube-publishing/SKILL.md](skills/youtube-publishing/SKILL.md#credentials-one-time-done-by-a-person-in-the-browser) → Credentials; `bin/yt youtube whoami` confirms the channel | to publish |
 | `YT_API_KEY` | YouTube search during topic research without the OAuth secrets | no |
 | `MEDIA_S3_ENDPOINT`, `MEDIA_S3_BUCKET`, `MEDIA_S3_ACCESS_KEY_ID`, `MEDIA_S3_SECRET_ACCESS_KEY`, `MEDIA_S3_PREFIX` | S3-compatible storage (e.g. Cloudflare R2) so narration, music and renders survive between sessions. Without it an episode must finish in the session that started it | no |
 | `FAL_KEY` | generative b-roll, off by default (`channel.yaml → broll.enabled`) | no |

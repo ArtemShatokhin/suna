@@ -11,12 +11,17 @@ reports them missing.
    `kortix validate`; it must pass. Commit `skills/` and open a change request ("Install HyperFrames
    skills"). Sessions only see the skills once that change request is merged.
 2. **Secrets.** `ELEVENLABS_API_KEY` is required (a paid ElevenLabs plan; Starter or above allows
-   commercial use). Optional: the YouTube secrets (`YT_CLIENT_ID`, `YT_CLIENT_SECRET`, `YT_REFRESH_TOKEN`;
-   the person makes them in the browser by `skills/youtube-publishing/SKILL.md` → Credentials, then
-   `bin/yt youtube whoami` confirms the channel; `YT_API_KEY`), `MEDIA_S3_*` and `FAL_KEY` — see the README's
-   Setup table. No model key is needed. Mint setup links with
-   `kortix secrets request <NAME…> --scope runtime` (a connector secret never reaches the sandbox);
-   never ask for a key in chat.
+   commercial use). Optional: the YouTube secrets (`YT_CLIENT_ID`, `YT_CLIENT_SECRET`, `YT_REFRESH_TOKEN`,
+   `YT_API_KEY`), `MEDIA_S3_*` and `FAL_KEY` — see the README's Setup table. No model key is needed.
+   Mint setup links with `kortix secrets request <NAME…> --scope runtime` (a connector secret never
+   reaches the sandbox); never ask for a key in chat.
+   - **YouTube publishing.** Ask whether the person wants the agency to publish. If yes, take them
+     through `skills/youtube-publishing/SKILL.md` → Credentials one step at a time, starting at
+     step 0: the channel must already exist on the account they will sign in with, and custom
+     thumbnails need it phone-verified at youtube.com/verify. Mint the secrets link with
+     `--scope runtime`, check that `kortix secrets ls` shows delivery environment, then run
+     `bin/yt youtube whoami` and show them the channel name. If they skip it, tell them uploads stay
+     off until these secrets are set.
 3. **Sandbox.** Every agent uses the `video` sandbox template (`Dockerfile.video`: ffmpeg, Chromium, bun,
    HyperFrames). It asks for 6 vCPU / 12 GB.
 4. **Check.** In a session on the `video` sandbox: `cd pipeline && bun install && bun test`, then
