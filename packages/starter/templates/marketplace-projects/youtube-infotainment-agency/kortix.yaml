@@ -118,15 +118,7 @@ agents:
     kortix_permissions: [project.read, project.review.read, project.review.submit, project.gitops.read,
       project.gitops.push, project.gitops.ref.any]
 
-  # ── Platform starters (kept from `kortix init`) ─────────────────────────────
-  kortix:
-    file: agents/kortix.md
-    # General-purpose worker for maintenance (pipeline code, kit, docs). Narrow once the project settles.
-    connectors: all
-    secrets: all
-    kortix_permissions: all
-    skills: all
-
+  # ── Harness upkeep ──────────────────────────────────────────────────────────
   harness-reflector:
     file: agents/harness-reflector.md
     # Refines prompts/skills/memory from session evidence; opens (never merges) a harness CR.

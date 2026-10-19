@@ -3,7 +3,7 @@ description: "Continual-harness reflector. Surveys recent sessions across the pr
 mode: primary
 # Kortix sessions are already sandboxed (isolated VM, ephemeral branch) and
 # this agent runs unattended on a cron — an `ask` rule has nobody to answer
-# it. Full access, same as the `kortix` agent.
+# it. Full access.
 permission: allow
 ---
 

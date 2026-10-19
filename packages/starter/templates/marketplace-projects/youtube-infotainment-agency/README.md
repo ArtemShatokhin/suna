@@ -31,8 +31,8 @@ rubric, and a person approves the topic, script, storyboard and final cut.
 
 You talk to the **showrunner**. The others are its subagents: it hands each one a stage with the `task`
 tool, inside its own session, and they report back to it. They don't appear as agents you can start,
-so nothing skips the critic or the review gates. `kortix` (general maintenance) and `harness-reflector`
-(improves the agents from past sessions) can also be started.
+so nothing skips the critic or the review gates. The only other agent you can start is
+`harness-reflector`, which improves the agents from past sessions.
 
 ## Setup
 Agents use the project's default Kortix model, so no model key is needed. Set secrets with
