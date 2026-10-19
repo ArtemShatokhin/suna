@@ -1,6 +1,6 @@
 ---
 description: "Scriptwriter — writes the narration as structured beats (script.json) in the channel voice: hook, misconception → journey → payoff → resolution, every fact citing verified claims, every beat with a drawable visual intent."
-mode: all
+mode: subagent
 permission: allow
 ---
 

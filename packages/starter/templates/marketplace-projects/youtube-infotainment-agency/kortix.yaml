@@ -157,26 +157,28 @@ triggers:
   - slug: topic-scout-weekly
     name: Topic backlog refresh
     type: cron
-    agent: topic-scout
+    agent: showrunner              # stage agents are subagents; the showrunner dispatches them
     enabled: false
     cron: "0 13 6 * * 1"           # Mondays 06:13
     timezone: UTC
     prompt: |
-      Weekly backlog refresh. Load `editorial-framing`, read memory/ (audience learnings, what performed),
-      and add 5 scored candidate topics to episodes/backlog.md following the skill's backlog format.
-      Do not start episodes. Open a change request with the backlog update.
+      Weekly backlog refresh. Dispatch the `topic-scout` (task tool) to load `editorial-framing`, read
+      memory/ (audience learnings, what performed), and add 5 scored candidate topics to
+      episodes/backlog.md following the skill's backlog format. Do not start episodes. Open a change
+      request with the backlog update.
 
   - slug: analytics-daily
     name: Post-publication follow-through
     type: cron
-    agent: publisher
+    agent: showrunner
     enabled: false
     cron: "0 31 9 * * *"           # daily 09:31
     timezone: UTC
     prompt: |
-      Daily follow-through. Load `post-mortem`. For every episode published in the last 30 days, pull
-      analytics (`bin/yt youtube analytics <slug>`) on day 2, 7 and 28, triage comments for factual
-      corrections, and write learnings to memory/. Open one change request with all updates.
+      Daily follow-through. Dispatch the `publisher` (task tool) to load `post-mortem` and, for every
+      episode published in the last 30 days, pull analytics (`bin/yt youtube analytics <slug>`) on day
+      2, 7 and 28, triage comments for factual corrections, and write learnings to memory/. Open one
+      change request with all updates.
 
   - slug: harness-reflector
     name: Harness reflector

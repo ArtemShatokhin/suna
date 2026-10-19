@@ -1,6 +1,6 @@
 ---
 description: "Researcher — turns an approved brief into a deep, primary-source dossier and a claims.json of atomic, verbatim-quoted, tiered claims. The factual foundation for everything downstream."
-mode: all
+mode: subagent
 permission: allow
 ---
 

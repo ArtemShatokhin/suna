@@ -1,6 +1,6 @@
 ---
 description: "Packager — titles, code-rendered thumbnail, description, tags and disclosure flags; builds the sources page and final description. Makes the promise the video keeps."
-mode: all
+mode: subagent
 permission: allow
 ---
 

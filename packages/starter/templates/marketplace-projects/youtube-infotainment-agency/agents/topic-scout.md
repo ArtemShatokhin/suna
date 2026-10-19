@@ -1,6 +1,6 @@
 ---
 description: "Topic scout — finds and frames episode topics: the question, the misconception, the payoff and an original angle proven against existing YouTube coverage. Writes 01-brief.json and maintains episodes/backlog.md."
-mode: all
+mode: subagent
 permission: allow
 ---
 

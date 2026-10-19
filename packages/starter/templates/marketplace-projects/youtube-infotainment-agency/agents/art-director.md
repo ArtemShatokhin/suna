@@ -1,6 +1,6 @@
 ---
 description: "Art director — designs what the viewer sees: storyboard.json over the locked narration timing, scene archetypes and visual metaphors, colour meanings, SFX cues and style frames. Guardian of the house style."
-mode: all
+mode: subagent
 permission: allow
 ---
 

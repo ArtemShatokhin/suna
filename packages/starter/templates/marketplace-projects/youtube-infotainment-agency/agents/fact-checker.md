@@ -1,6 +1,6 @@
 ---
 description: "Fact-checker — independently re-fetches every source and verifies every claim in claims.json; writes fact-check.json and applies verdicts. Also re-verifies claims after viewer reports."
-mode: all
+mode: subagent
 permission: allow
 ---
 

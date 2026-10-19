@@ -95,7 +95,8 @@ pole (measured ~2.6× realtime on 4 vCPU; the `video` sandbox has 6); start it e
 ## 6. Parallelism (optional, for long episodes)
 Scenes are independent once timing and storyboard are locked. Several `task` calls in one message
 run concurrently, so dispatch independent scenes (and their critic reviews) together. For >12 scenes, start child sessions
-per act (`kortix sessions new --agent animator -p "<slug> scenes sc05–sc09 …"`), wait with
+per act (`kortix sessions new --agent showrunner -p "<slug>: dispatch the animator for scenes sc05–sc09
+only, critic each scene, then stop"`; stage agents are subagents and can't own a session), wait with
 `kortix sessions wait-for`, and merge their branches into `episode/<slug>`.
 
 ## 7. Spend

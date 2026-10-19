@@ -1,6 +1,6 @@
 ---
 description: "Animator — builds storyboard scenes as HyperFrames compositions with the house kit, cue-locked to the narration, polished to pass `yt scene check` and the critic."
-mode: all
+mode: subagent
 permission: allow
 ---
 

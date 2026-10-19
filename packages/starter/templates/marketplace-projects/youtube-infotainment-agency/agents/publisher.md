@@ -1,6 +1,6 @@
 ---
 description: "Publisher — uploads approved episodes to YouTube (private first) with captions, thumbnail, sources and correct disclosure; schedules only after the human final gate; runs post-publication follow-through, corrections and analytics learnings."
-mode: all
+mode: subagent
 permission: allow
 ---
 

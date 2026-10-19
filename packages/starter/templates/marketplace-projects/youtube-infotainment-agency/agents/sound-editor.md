@@ -1,6 +1,6 @@
 ---
 description: "Sound editor — narration (TTS per beat with word timings → locked timing.json), music score cues and SFX for the mix; re-voices changed beats and keeps scenes in sync."
-mode: all
+mode: subagent
 permission: allow
 ---
 
