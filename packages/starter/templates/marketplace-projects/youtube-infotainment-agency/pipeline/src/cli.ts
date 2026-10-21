@@ -20,6 +20,7 @@ import { assemble, prepareSound } from "./render";
 import { Brief, Claims, FactCheck, Script } from "./schemas";
 import { buildScene, checkScene, retimeScenes, scaffoldScene, snapScene, windows } from "./scenes";
 import { lintScript, scriptMarkdown } from "./script";
+import { styleframeSheet } from "./storyboard";
 import { writeSources } from "./sources";
 import * as storage from "./storage";
 import { renderThumbnail, scaffoldThumbnail } from "./thumbnail";
@@ -70,6 +71,7 @@ Voice casting (per episode — the sound-editor picks the narrator; channel.yaml
 Voice, scenes, sound
   yt voice <slug> [--provider elevenlabs|kokoro|stub]   narrate beats (cached) and lock timing.json
   yt voice report <slug>                      measured pacing: wpm and the pause after every punctuation mark
+  yt storyboard sheet <slug>                  every style frame on one image (qa/styleframes.jpg), in scene order
   yt scene list <slug>                        scene windows from storyboard × timing
   yt scene scaffold <slug> [<scene>]          create 05-scenes/<scene>.html from the kit template
   yt scene retime <slug>                      refresh CUES + durations after a voice change
@@ -261,6 +263,11 @@ async function main() {
       }
       if (sub === "status") return out(cast.episodeCast(slug));
       throw new Error(`unknown: cast ${sub}`);
+    }
+
+    case "storyboard": {
+      if (sub !== "sheet") throw new Error("usage: yt storyboard sheet <slug>");
+      return out(await styleframeSheet(need(a1, "slug")));
     }
 
     case "scene": {

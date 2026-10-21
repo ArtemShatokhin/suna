@@ -33,10 +33,13 @@ first draft to see real durations.
 - `transition_in` — cut (default), wipe (new chapter), zoom (scale), match (shared shape), fade.
 
 ## Style frames
-For the hook, the number/climax, and any novel visual: build a still with HyperFrames (the animator's
-kit) or as a quick scene draft, snapshot it, and save PNGs to `04-visual/styleframes/<scene>.png`
-(keep each <1 MB; `ffmpeg -i in.png -vf scale=960:-2 out.png`). Reference them in `styleframe`.
-Look at them yourself before handing off — would a stranger understand the frame in 2 seconds?
+For the hook, the number/climax, and any novel visual (not every scene): build a still with HyperFrames
+(the animator's kit) or as a quick scene draft, snapshot it, and save PNGs to
+`04-visual/styleframes/<scene>.png` (keep each <1 MB; `ffmpeg -i in.png -vf scale=960:-2 out.png`).
+Reference them in `styleframe`. Build them all first, then run `bin/yt storyboard sheet <slug>` and look
+at `qa/styleframes.jpg`: would a stranger understand each frame in 2 seconds? Fix, re-run the sheet,
+look again. Open a single frame only for a detail the sheet is too small to show: every image you open
+stays in your context and slows each later step.
 
 ## Output & checks
 `04-visual/storyboard.json` (schema `Storyboard`: `style_notes`, `scenes[]`), then:

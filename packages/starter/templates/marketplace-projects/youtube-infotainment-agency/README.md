@@ -58,6 +58,11 @@ Then:
 4. **Start an episode:** `kortix sessions new --agent showrunner -p "Start a new episode from the top of
    episodes/backlog.md"`, then review the gates in the Kortix review inbox. Triggers ship disabled.
 
+**What to expect.** On the default model a 1-minute episode takes about 3 hours of agent time from topic
+to final gate, plus however long each of the four gates waits for you, and $2.50–4 of ElevenLabs spend
+(two test episodes, October 2026: 63 s in 206 min, 66 s in 173 min). Nearly all of it is model
+generation; `bin/yt episode timing <slug>` shows where an episode spends its time.
+
 Try the pipeline offline first: `cd pipeline && bun install && bun test`, then `bin/yt smoke` renders a
 22-second QA'd episode with stub voice and music.
 

@@ -95,8 +95,14 @@ export function scriptMarkdown(script: Script, claims: Claims): string {
     for (const cid of b.claims) {
       const c = byId.get(cid);
       if (!c) continue;
-      const s = src.get(c.source_ids[0]!);
-      lines.push(`- \`${cid}\` ${c.text} — [${s?.publisher ?? "?"}](${s?.url ?? "#"})`);
+      // Every supporting source, not just the first: a claim's chain is often Avogadro + area + packing,
+      // and attributing the whole sum to whichever source happened to be listed first misleads the
+      // human reading this at the script gate.
+      const links = c.source_ids
+        .map((sid) => src.get(sid))
+        .filter((s): s is NonNullable<typeof s> => Boolean(s))
+        .map((s) => `[${s.publisher}](${s.url})`);
+      lines.push(`- \`${cid}\` ${c.text} — ${links.length ? links.join(", ") : "?"}`);
     }
     if (b.claims.length) lines.push("");
   }

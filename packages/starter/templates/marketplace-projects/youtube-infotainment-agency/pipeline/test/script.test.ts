@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { applyFactCheck } from "../src/claims";
 import { Claims, FactCheck, Script } from "../src/schemas";
-import { estimateSeconds, lintScript, stripTags, words } from "../src/script";
+import { estimateSeconds, lintScript, scriptMarkdown, stripTags, words } from "../src/script";
 import { fixture } from "./helpers";
 
 const claims = () => Claims.parse(fixture("02-research/claims.json"));
@@ -69,5 +69,18 @@ describe("script lint", () => {
     const s = script();
     s.beats[0]!.act = "setup";
     expect(lintScript(s, verified()).issues.some((i) => /hook/.test(i.msg))).toBe(true);
+  });
+});
+
+describe("script.md", () => {
+  test("a claim cites every source behind it, not only the first", () => {
+    const c = verified();
+    const claim = c.claims.find((x) => script().beats.some((b) => b.claims.includes(x.id)))!;
+    const [a, b] = c.sources;
+    claim.source_ids = [a!.id, b!.id];
+    const md = scriptMarkdown(script(), c);
+    const line = md.split("\n").find((l) => l.includes(`\`${claim.id}\``))!;
+    expect(line).toContain(`[${a!.publisher}](${a!.url})`);
+    expect(line).toContain(`[${b!.publisher}](${b!.url})`);
   });
 });

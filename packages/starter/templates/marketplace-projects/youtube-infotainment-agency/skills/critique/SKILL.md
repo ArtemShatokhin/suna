@@ -30,7 +30,9 @@ The showrunner asks for one of two things:
 2. Gather evidence — never review from memory or from the maker's summary:
    - topic/research/script: the JSON + markdown artifacts; spot-check at least 3 sources yourself
      (open them) for research and script reviews.
-   - storyboard: storyboard.json, style frames (look at the PNGs), `bin/yt scene list <slug>` timings.
+   - storyboard: storyboard.json, the style frame sheet `qa/styleframes.jpg` (`bin/yt storyboard sheet
+     <slug>` makes it), `bin/yt scene list <slug>` timings. Open a single style frame only for a detail
+     the sheet is too small to show.
    - scenes: `bin/yt scene check <slug> <scene> --json` (it already tests lint, runtime, layout,
      motion, contrast and duration), then **look at** the contact sheet `qa/scenes/<scene>-contact.jpg`
      and the snapshots, and read the scene's beats in script.md. For sync, take snapshots at cue times:

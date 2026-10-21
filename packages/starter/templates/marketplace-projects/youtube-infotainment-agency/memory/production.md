@@ -134,3 +134,11 @@ trap that cost real debugging time; numbers are measurements from that productio
   `-map`.
 - **Derive stage inputs from state files** (`timing.json`, `sound.json`), not from numbers quoted in a
   dispatch.
+- **"Sparse" music prompts buy silence, not space**: cues prompted "sparse / long silences / decays into
+  silence" came back with 3–12 s of real audio in 16–20 s takes, so the bed vanished mid-act. "Plays
+  continuously from the first bar to the last, no silent gaps, no fade-out and no ending" fixed most of
+  them; the provider still tends to resolve 4–5 s early. Take normalisation is peak-capped (−3 dBTP), so a
+  peaky take needs a higher cue volume. Measure every take's LUFS, true peak and windowed levels.
+- **Short SFX draws are often near-silent**: 5 of 6 draws of a 0.5 s "single wooden ruler tick" came back
+  at −48…−54 dBFS peak, beyond what normalisation can lift. Save each take, pick by measured peak, and
+  install the winner at its cache path instead of re-rolling blind.
