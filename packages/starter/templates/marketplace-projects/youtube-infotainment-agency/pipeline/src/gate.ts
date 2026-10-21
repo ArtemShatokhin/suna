@@ -5,7 +5,7 @@
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { brollBudget } from "./broll";
-import { stageReviews } from "./critic";
+import { stageReviews, stageVerdict } from "./critic";
 import { loadEpisode, requestGate, decideGate, saveEpisode, totalCost, type Gate } from "./episode";
 import { readReview, submitReview } from "./lib/review";
 import { load, readJson, writeText } from "./lib/io";
@@ -99,6 +99,17 @@ export function packet(slug: string, gate: Gate): string {
 export async function request(slug: string, gate: Gate, opts: { submit?: boolean }) {
   const p = ep(slug);
   if (loadEpisode(slug).gates[gate].status === "approved") throw new Error(`gate ${gate} is already approved`);
+  // The human sees a stage only after the critic has passed it: run the critic loop first.
+  const stage = STAGE_FOR_GATE[gate];
+  let verdict: ReturnType<typeof stageVerdict>;
+  try {
+    verdict = stageVerdict(slug, stage);
+  } catch (e) {
+    throw new Error(`gate ${gate}: the critic has not reviewed stage ${stage} yet. ${(e as Error).message}`);
+  }
+  if (!verdict.pass) {
+    throw new Error(`gate ${gate}: the critic's review of ${stage} fails (${verdict.blockers} blocker, ${verdict.majors} major, auto-fail ${verdict.auto_fail.length}); fix and re-check first`);
+  }
   const body = packet(slug, gate);
   writeText(p.reviewPacket(gate), body);
   const state = loadEpisode(slug);

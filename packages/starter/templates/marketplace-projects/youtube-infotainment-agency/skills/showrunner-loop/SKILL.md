@@ -54,6 +54,7 @@ bin/yt episode next <slug> --json       # → run_stage (+ also: […]) | await_
   pass the answer back on the next dispatch.
 - **Casting is part of the voice stage**: the sound-editor casts each episode's narrator (`bin/yt cast library` → `bin/yt cast adopt`) before narrating; no human gate. On a re-voice, say whether to keep the cast (the default) or re-cast.
 - **await_gate** → if the gate status is `closed`, run `bin/yt gate request <slug> <gate> --submit`
+  (it refuses until the critic's review of the gate's stage passes: run the critic loop first)
   and tell the human in one line what to review. If `requested`, do nothing — it's theirs.
 - **blocked** → do not retry blindly. Summarise the blocker for the human (`kortix review submit
   --kind decision`) with options, and move on to other episodes.
@@ -88,14 +89,14 @@ renders scenes concurrently within those slots.
 | stage | agent | notes |
 |---|---|---|
 | topic | topic-scout | brief + originality survey → **topic gate** |
-| research | researcher | dossier + claims.json |
-| factcheck | fact-checker | independent; then `bin/yt claims apply` |
+| research | researcher | dossier + claims.json; when it returns, dispatch the research **critic and the fact-checker in one message** |
+| factcheck | fact-checker | runs beside the research critic; once research passes, `bin/yt episode start/complete <slug> factcheck` around `bin/yt claims apply`, and if it lists `stale` claims (reworded by a research fix), send only those back to the fact-checker |
 | script | scriptwriter | `bin/yt script lint` must be clean; `bin/yt script md` → **script gate** |
 | voice | sound-editor | `bin/yt voice <slug>`; locks timing.json |
 | storyboard | art-director | storyboard.json + style frames → **storyboard gate** |
 | scenes | animator | **one animator task per scene, all dispatched together**; each passes `bin/yt scene check`, then one critic task per scene |
 | sound | sound-editor | sound.json; `bin/yt sound` |
-| render | (you) | starts when scenes **and** sound are done: `bin/yt render <slug>` then `bin/yt qa final <slug>`; critic on the assembled cut |
+| render | (you) | starts when scenes **and** sound are done: `bin/yt render <slug>` **in the foreground** (about a minute for a 1-minute film; a background job, `&` or `nohup`, is cancelled when the shell returns), then `bin/yt qa final <slug>` (contact sheet + seam sheet); critic on the assembled cut writes `qa/render-review.json` |
 | package | packager | runs alongside scenes and sound: package.json, thumbnail, `bin/yt sources`, `bin/yt thumb render`; with render → **final gate** |
 | publish | publisher | private upload; schedule only after the final gate; sources page |
 | followup | publisher | analytics + corrections at day 2/7/28 |
@@ -111,7 +112,10 @@ renders scenes concurrently within those slots.
 Waiting on a model is free for the sandbox; only HyperFrames jobs use its CPU, and they queue for slots
 by themselves. So run in parallel whenever inputs allow:
 - after the storyboard gate: **scenes ‖ sound ‖ package** (`also` in `episode next`);
+- research: the research critic and the fact-checker read the same dossier, so they run together;
 - inside scenes: one animator task per scene, then one critic task per scene, each batch in one message;
+- the package critic goes into the next batch you dispatch once the packager returns (with the scene
+  critics, say); it never waits for the render;
 - fixes and re-checks for independent scenes or files.
 Keep sequential only what depends on something unfinished. For >12 scenes, start child sessions
 per act (`kortix sessions new --agent showrunner -p "<slug>: dispatch the animator for scenes sc05–sc09

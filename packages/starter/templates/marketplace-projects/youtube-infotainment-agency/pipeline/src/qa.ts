@@ -4,8 +4,12 @@ import { channel } from "./config";
 import { ffprobeJson, run } from "./lib/exec";
 import { ensureDir, load, round, writeJson } from "./lib/io";
 import { ep } from "./lib/paths";
-import { Timing } from "./schemas";
+import { Storyboard, Timing } from "./schemas";
 import { measureLoudness } from "./audio/mix";
+import { sceneWindows, seams } from "./timing";
+
+/** Frames shown either side of each cut on the seam sheet: 0.1 s at 30 fps, enough to see a hard cut, a flash or a pop. */
+const SEAM_SIDE_FRAMES = 3;
 
 export interface QaCheck {
   name: string;
@@ -57,8 +61,25 @@ export async function qaFinal(slug: string) {
     "-frames:v", "1", "-q:v", "3", contact,
   ]);
 
+  // Seam sheet: one row per cut between scenes, the frames either side of it, so the critic sees every
+  // cut frame by frame without extracting frames itself.
+  const cuts = seams(sceneWindows(load(Storyboard, p.storyboard), timing, cfg.video.fps), cfg.video.fps, SEAM_SIDE_FRAMES);
+  const seamSheet = cuts.length ? join(p.qa, "final-seams.jpg") : null;
+  if (seamSheet) {
+    const select = cuts.map((c) => `between(n,${c.frames[0]},${c.frames[1]})`).join("+");
+    await run([
+      "ffmpeg", "-y", "-v", "error", "-i", p.final,
+      "-vf", `select='${select}',scale=320:-2,tile=${2 * SEAM_SIDE_FRAMES}x${cuts.length}:padding=4:color=black`,
+      "-frames:v", "1", "-q:v", "3", seamSheet,
+    ]);
+  }
+
   const ok = checks.every((c) => c.ok || c.severity === "warn");
-  const report = { ok, duration: round(duration, 2), contact_sheet: contact, every_seconds: every, checks };
+  const report = {
+    ok, duration: round(duration, 2), contact_sheet: contact, every_seconds: every,
+    seam_sheet: seamSheet, seams: cuts.map((c) => ({ cut: `${c.from} → ${c.to}`, at: c.at, frames: c.frames })),
+    checks,
+  };
   writeJson(join(p.qa, "final-qa.json"), report);
   return report;
 }

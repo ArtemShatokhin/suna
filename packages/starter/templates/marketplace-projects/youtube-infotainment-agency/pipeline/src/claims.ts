@@ -5,12 +5,21 @@ import type { Claims, FactCheck } from "./schemas";
  * supported → verified; partially_supported → disputed (rewrite needed); unsupported/unreachable → rejected.
  * A claim the checker did not look at stays unverified, which the script lint treats as an error.
  */
-export function applyFactCheck(claims: Claims, fc: FactCheck): { claims: Claims; summary: Record<string, number> } {
+export function applyFactCheck(claims: Claims, fc: FactCheck): { claims: Claims; summary: Record<string, number>; stale: string[] } {
   const verdicts = new Map(fc.results.map((r) => [r.claim_id, r]));
   const summary: Record<string, number> = { verified: 0, disputed: 0, rejected: 0, unverified: 0 };
+  const stale: string[] = [];
   const next = structuredClone(claims);
   for (const c of next.claims) {
     const r = verdicts.get(c.id);
+    // The fact-check can run while the research critic still reviews the dossier: a claim reworded since
+    // its check keeps no verdict, so the fact-checker re-checks it.
+    if (r?.claim_text !== undefined && r.claim_text !== c.text) {
+      c.status = "unverified";
+      stale.push(c.id);
+      summary.unverified! += 1;
+      continue;
+    }
     if (!r) c.status = "unverified";
     else if (r.verdict === "supported") c.status = "verified";
     else if (r.verdict === "partially_supported") c.status = "disputed";
@@ -20,7 +29,7 @@ export function applyFactCheck(claims: Claims, fc: FactCheck): { claims: Claims;
     }
     summary[c.status] = (summary[c.status] ?? 0) + 1;
   }
-  return { claims: next, summary };
+  return { claims: next, summary, stale };
 }
 
 /** Share of claims backed by at least one primary source — a research-quality signal for the critic. */

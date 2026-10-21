@@ -38,9 +38,11 @@ The showrunner asks for one of two things:
      Judge by eye, as a viewer would. Don't dump frames, sweep for frozen frames, count pixels or
      build geometry probes: a fault you can only find that way is not one a viewer sees. If two
      snapshots leave you unsure what happens between them, snap a few more moments there.
-   - final cut: the **assembled film only** — `qa/final-qa.json` (loudness, peaks, black frames, dead
-     air, sync), `qa/final-contact.jpg`, the cuts between scenes, pacing, captions. Each scene's
-     internals already passed its own review: don't re-audit them unless final QA flags that scene.
+   - final cut (stage `render`, so write `qa/render-review.json`): the **assembled film only** —
+     `qa/final-qa.json` (loudness, peaks, black frames, dead air, sync), `qa/final-contact.jpg`, the cuts
+     between scenes on `qa/final-seams.jpg` (one row per cut, the 3 frames either side; don't extract
+     frames yourself), pacing, captions. Each scene's internals already passed its own review: don't
+     re-audit them unless final QA flags that scene.
    - packaging: `qa/thumbnail-preview.jpg` **and** `qa/thumbnail-small.png` (judge at 160 px),
      description.txt, `bin/yt youtube search` results if available.
 3. Score every criterion 1–5 using the anchors. Be calibrated: 3 is "solid YouTube", 5 is the best

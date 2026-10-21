@@ -97,6 +97,7 @@ export async function smoke(opts: { keep?: boolean } = {}) {
     loudness_on_target: !!qa && qa.checks.find((c) => c.name === "integrated loudness")!.ok,
     final_qa_ok: !!qa?.ok,
     contact_sheet: !!qa && existsSync(qa.contact_sheet),
+    seam_sheet: !!qa?.seam_sheet && existsSync(qa.seam_sheet) && qa.seams.length > 0,
     captions: existsSync(p.captions),
     sources_page: existsSync(p.sourcesMd),
     description: existsSync(p.descriptionTxt),

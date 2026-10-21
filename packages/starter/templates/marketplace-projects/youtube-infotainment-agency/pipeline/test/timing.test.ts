@@ -3,7 +3,7 @@ import { charsToWords, estimateWords } from "../src/audio/align";
 import { Script, Storyboard } from "../src/schemas";
 import { chapters, description } from "../src/sources";
 import { Claims, Package } from "../src/schemas";
-import { cueTime, layoutTiming, sceneWindows, toSrt, type BeatClip } from "../src/timing";
+import { cueTime, layoutTiming, sceneWindows, seams, toSrt, type BeatClip } from "../src/timing";
 import { fixture } from "./helpers";
 
 const script = () => Script.parse(fixture("03-script/script.json"));
@@ -113,5 +113,19 @@ describe("ASR alignment", () => {
     expect(w[2]!.start).toBeGreaterThanOrEqual(1.7);
     expect(w[4]!.end).toBeLessThanOrEqual(3.6);
     for (let i = 1; i < w.length; i++) expect(w[i]!.start).toBeGreaterThanOrEqual(w[i - 1]!.start);
+  });
+});
+
+describe("scene seams", () => {
+  const win = (id: string, start: number, end: number) => ({ id, start, end, duration: end - start, beats: [] });
+  test("one seam per cut, with the frames on both sides of it", () => {
+    const s = seams([win("sc01", 0, 11.8), win("sc02", 11.8, 22.633), win("sc03", 22.633, 30)], 30, 3);
+    expect(s).toEqual([
+      { from: "sc01", to: "sc02", at: 11.8, frames: [351, 356] },
+      { from: "sc02", to: "sc03", at: 22.633, frames: [676, 681] },
+    ]);
+  });
+  test("a single scene has no seam", () => {
+    expect(seams([win("sc01", 0, 9)], 30, 3)).toEqual([]);
   });
 });

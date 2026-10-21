@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, test } from "bun:test";
 import { channel } from "../src/config";
 import { stageVerdict } from "../src/critic";
 import { newEpisode, saveEpisode } from "../src/episode";
-import { packet } from "../src/gate";
+import { packet, request } from "../src/gate";
 import { writeJson } from "../src/lib/io";
 import { ep } from "../src/lib/paths";
 import { parseShowOutput, parseSubmitOutput } from "../src/lib/review";
@@ -88,5 +88,32 @@ describe("scene reviews", () => {
   });
   test("scenes get one fix round by default", () => {
     expect(channel().critic.scene_fix_rounds).toBe(1);
+  });
+});
+
+describe("gate requests", () => {
+  const review = (stage: string, severity?: "major" | "minor") =>
+    Review.parse({ stage, rubric: `rubrics/${stage}.md`, reviewed_at: "2026-10-21T13:30:00Z", scores: { x: 4 }, overall: 4, pass: true,
+      issues: severity ? [{ severity, where: "w", problem: "p", fix: "f" }] : [] });
+
+  beforeEach(() => {
+    tempEpisode();
+    saveEpisode(newEpisode("_smoke", "t"));
+  });
+
+  test("a gate is not requested before the critic has reviewed its stage", async () => {
+    await expect(request("_smoke", "topic", {})).rejects.toThrow(/critic/);
+  });
+  test("a gate is not requested while the critic's review fails", async () => {
+    writeJson(ep("_smoke").review("topic"), review("topic", "major"));
+    await expect(request("_smoke", "topic", {})).rejects.toThrow(/fails/);
+  });
+  test("a passing review lets the gate be requested", async () => {
+    writeJson(ep("_smoke").review("topic"), review("topic", "minor"));
+    expect(await request("_smoke", "topic", {})).toMatchObject({ submitted: false });
+  });
+  test("the final gate needs the final-cut review (stage render)", async () => {
+    writeJson(ep("_smoke").review("final"), review("render"));
+    await expect(request("_smoke", "final", {})).rejects.toThrow(/render-review\.json.*final-review\.json/s);
   });
 });

@@ -66,6 +66,17 @@ export function sceneWindows(storyboard: Storyboard, timing: Timing, fps = 30): 
   });
 }
 
+/**
+ * The cuts between consecutive scenes, each with the frame range `side` frames either side of it
+ * (`frames` = [first, last] frame index of the final film), so a cut can be seen frame by frame.
+ */
+export function seams(wins: SceneWindow[], fps: number, side: number) {
+  return wins.slice(1).map((w, i) => {
+    const n = Math.round(w.start * fps);
+    return { from: wins[i]!.id, to: w.id, at: w.start, frames: [n - side, n + side - 1] as [number, number] };
+  });
+}
+
 /** Absolute time of a word cue (first occurrence of `word` in `beat`, case-insensitive), else beat start. */
 export function cueTime(timing: Timing, beatId: string, word?: string): number {
   const b = timing.beats.find((x) => x.id === beatId);

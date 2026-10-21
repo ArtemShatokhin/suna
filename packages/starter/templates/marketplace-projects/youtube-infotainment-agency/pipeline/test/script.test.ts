@@ -32,6 +32,17 @@ describe("fact-check merge", () => {
     fc.results = fc.results.slice(0, 1);
     expect(applyFactCheck(claims(), fc).summary.unverified).toBe(2);
   });
+  test("a claim reworded after its check goes back to unverified, and is named", () => {
+    const fc = FactCheck.parse(fixture("02-research/fact-check.json"));
+    const c = claims();
+    fc.results = fc.results.map((r) => ({ ...r, claim_text: c.claims.find((x) => x.id === r.claim_id)!.text }));
+    c.claims[1]!.text = `${c.claims[1]!.text} (reworded after the check)`;
+    const { claims: out, summary, stale } = applyFactCheck(c, fc);
+    expect(out.claims[1]!.status).toBe("unverified");
+    expect(out.claims[0]!.status).toBe("verified");
+    expect(stale).toEqual([c.claims[1]!.id]);
+    expect(summary.unverified).toBe(1);
+  });
 });
 
 describe("script lint", () => {

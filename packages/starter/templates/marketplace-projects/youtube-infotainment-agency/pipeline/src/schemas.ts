@@ -86,6 +86,7 @@ export const FactCheck = z.object({
         verdict: Verdict,
         evidence: z.string().min(5).describe("What the checker read, in its own fetch of the source."),
         corrected_text: z.string().optional(),
+        claim_text: z.string().optional().describe("The claim text as checked; a claim reworded since then is not verified."),
       }),
     )
     .min(1),

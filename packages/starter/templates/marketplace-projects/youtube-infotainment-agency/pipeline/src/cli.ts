@@ -218,9 +218,10 @@ async function main() {
       const slug = need(a1, "slug");
       const p = ep(slug);
       if (sub === "apply") {
-        const { claims, summary } = applyFactCheck(load(Claims, p.claims), load(FactCheck, p.factcheck));
+        const { claims, summary, stale } = applyFactCheck(load(Claims, p.claims), load(FactCheck, p.factcheck));
         writeJson(p.claims, claims);
-        return out(summary);
+        // `stale`: claims reworded since the fact-check; send only these back to the fact-checker.
+        return out({ ...summary, stale });
       }
       if (sub === "stats") {
         const c = load(Claims, p.claims);

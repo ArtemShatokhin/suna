@@ -24,7 +24,9 @@ to real sources — your job is to make that 100 %.
 4. `evidence`: one or two sentences on what you read and where.
 
 ## Output
-`02-research/fact-check.json` (schema `FactCheck`), one result per claim — don't skip any. Then:
+`02-research/fact-check.json` (schema `FactCheck`), one result per claim — don't skip any. Copy each
+claim's text, exactly as you checked it, into `claim_text`: the research critic may still be reviewing
+the dossier, and a claim reworded after your check loses its verdict until you check it again. Then:
 ```bash
 bin/yt claims apply <slug>     # merges verdicts into claims.json statuses
 bin/yt claims stats <slug>

@@ -24,7 +24,12 @@ export function stageReviews(slug: string, stage: string): { id: string; review:
 export function stageVerdict(slug: string, stage: string) {
   const reviews = stageReviews(slug, stage);
   if (!reviews.length) {
-    throw new Error(`no critic review on file for ${stage}: expected qa/${stage}-review.json or qa/${stage}-<scene>-review.json`);
+    const qa = ep(slug).qa;
+    const found = existsSync(qa) ? readdirSync(qa).filter((f) => f.endsWith("-review.json")) : [];
+    throw new Error(
+      `no critic review on file for ${stage}: expected qa/${stage}-review.json or qa/${stage}-<scene>-review.json` +
+        ` (found: ${found.length ? found.join(", ") : "none"})`,
+    );
   }
   const verdicts = reviews.map(({ id, review }) => ({ id, ...reviewVerdict(review) }));
   const sum = (k: "blockers" | "majors" | "minors") => verdicts.reduce((n, v) => n + v[k], 0);
