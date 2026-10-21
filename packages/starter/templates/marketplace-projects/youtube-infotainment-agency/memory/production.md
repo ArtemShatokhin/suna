@@ -48,29 +48,29 @@ trap that cost real debugging time; numbers are measurements from that productio
 - **A tween that names no ease inherits `Kit.scene`'s `power3.out`**: a "steady spin" silently
   decelerates. Use `ease: "none"` for constant rates.
 - **`.k-line` CSS overrides stroke presentation attributes**: `stroke="var(--coral)"` on a `.k-line`
-  renders paper-white. Set colour via style/class, and check pixels, not code.
+  renders paper-white. Set colour via style/class, and check it on a snapshot.
 - **GSAP stagger + yoyo + repeat re-applies the stagger every cycle**: total =
-  `[dur + stagger*(n-1)] * (repeat+1)`. Probe the animation map instead of assuming.
+  `[dur + stagger*(n-1)] * (repeat+1)`. Compute the end from that; don't assume per-target offsets.
 - **`Kit.float(..., from, to)` under-covers by design** (`reps = floor((to-from)/(period/2)) - 1`): the bob
   ends before `to` and can leave a frozen tail. Re-aim `to` or add an explicit yoyo tween.
-- **`tl.seek(t)` suppresses events by default**: onUpdate-driven proxies look stale in DOM probes. Probes
-  must call `tl.seek(t, false)` (the renderer fires events, so renders are correct).
+- **`tl.seek(t)` suppresses events by default**: onUpdate-driven proxies look stale under a plain seek.
+  A script that seeks the timeline must call `tl.seek(t, false)` (the renderer fires events, so renders
+  are correct).
 
 ## Scene QA the checks can't see
 - **"Animated but never shown"**: an element that starts at `opacity="0"` and is only rotated passes
-  lint, layout, motion and contrast. Grep each scene for initial `opacity 0` and prove every id has a
-  tween that raises it; then sample rendered frames for each layer's ink on both sides of its cue.
-- **Sibling/text overlap is invisible to `yt scene check`** (it tests overflow only). A cheap guard:
-  pairwise text-box intersection plus a real line count via `Range.getClientRects()`.
+  lint, layout, motion and contrast. Grep each scene for initial `opacity 0`, make sure every id has a
+  tween that raises it, and look at a snapshot after its cue.
+- **Sibling/text overlap is invisible to `yt scene check`** (it tests overflow only). Look at the
+  snapshots where text sits near other text; a 0×0 absolutely positioned container makes its pills
+  shrink, wrap and overlap, so give it a real width.
 - **A committed styleframe is the DESIGN state, not a timeline frame**: reproduce its geometry at rest
-  and time the entrances around it. When a still pins positions or layer order, diff your frame against
-  it by mask boxes.
+  and time the entrances around it. When a still pins positions or layer order, compare a snapshot at
+  that moment with it.
 - **Derive a pinned position from the formula, check the absolute value**: a self-consistent harness
   verifies your convention, not the plan's numbers.
 - **A camera "wide view" needs a world bigger than the frame**: draw the room at the widest view's size
   (1920/scale × 1080/scale) so the frame is all world at the widest point.
-- **Frozen-frame evidence must quote its settings and the longest run**, not a minimum: sampling every
-  0.6 s can hide a 0.18 s park. When a frozen hold is suspected, sweep at a fixed fps over that window.
 - **Look at frames first**: the default models read images, so judge snapshots and contact sheets by
   eye. Only when the image tool can't open a PNG, verify a still without eyes: build it as a
   composition, `hyperframes snapshot --at <t> --no-end`, `hyperframes check` for contrast, OCR the

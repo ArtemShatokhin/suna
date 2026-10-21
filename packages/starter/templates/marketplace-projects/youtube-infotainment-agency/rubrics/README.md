@@ -8,6 +8,9 @@ The critic scores every stage output against the matching rubric and writes
 - `overall` = mean of criteria. `pass` = no auto-fail **and** no `blocker` **and** no `major` issue
   (`bin/yt review verdict` applies it). Scores are feedback for the maker, not the gate; `minor`
   issues are recorded and never sent back.
+- Severity is what a viewer experiences on one watch at normal speed (definitions in
+  `skills/critique/SKILL.md`). A fault found only by stepping through frames or measuring pixels is
+  `minor` at most.
 - Every score below 4 needs at least one issue with a concrete, actionable `fix`.
 - Auto-fails are listed per rubric; any one fails the review regardless of scores.
 

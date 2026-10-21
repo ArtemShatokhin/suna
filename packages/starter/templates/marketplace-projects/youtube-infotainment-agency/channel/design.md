@@ -38,8 +38,9 @@ never encode meaning in colour alone (label it too). Text must pass WCAG 3:1 for
 2. One idea per moment. Bring elements in, let them be read, then clear the stage.
 3. Easing vocabulary: entrances `power3.out` / `back.out(1.8)` for pops; exits `power2.in`; camera
    `power2.inOut`; continuous drift `none` or `sine.inOut`. No linear entrances.
-4. Life in every frame: something subtle always moves (drifting clouds, floating Mote, twinkling
-   stars), but it must not compete with the subject.
+4. Ambient life: during longer holds something subtle moves (drifting clouds, floating Mote,
+   twinkling stars), but it must not compete with the subject. A short still beat while the viewer
+   reads is fine.
 5. Camera moves (`Kit.camera`) signal changes of scale or focus — zoom in to go small, out to go big.
 6. Transitions: `cut` by default; `wipe` for a new chapter; `zoom` for scale journeys; `match` when two
    scenes share a shape. Never use a transition just to fill time.

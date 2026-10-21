@@ -18,7 +18,10 @@ The showrunner asks for one of two things:
   sent back** on the changed artifacts (cite the frame, timestamp or line), and run the stage's `yt`
   checks for regressions. Do not re-score from scratch or hunt for new minor issues; report a new
   blocker or major only if the fix caused it. Rewrite the review with the issues that remain, and keep
-  the scores unless the fix changed them.
+  the scores unless the fix changed them. For a scene, look at snapshots at the timestamps of the
+  sent-back issues (`bin/yt scene snap --at`); don't re-measure the whole scene. Scenes get
+  `critic.scene_fix_rounds` (1) fix round each: say plainly what is still open, and the showrunner
+  takes it to the final gate.
 
 ## Procedure
 1. Read the rubric (`rubrics/<stage>.md`) and `rubrics/README.md`. Read the channel bible pages that
@@ -28,10 +31,13 @@ The showrunner asks for one of two things:
    - topic/research/script: the JSON + markdown artifacts; spot-check at least 3 sources yourself
      (open them) for research and script reviews.
    - storyboard: storyboard.json, style frames (look at the PNGs), `bin/yt scene list <slug>` timings.
-   - scenes: `bin/yt scene check <slug> <scene> --json` output, then **look at** the contact sheet
-     `qa/scenes/<scene>-contact.jpg` and individual snapshots; read the scene's beats in script.md.
-     Take extra snapshots at cue times when sync matters:
+   - scenes: `bin/yt scene check <slug> <scene> --json` (it already tests lint, runtime, layout,
+     motion, contrast and duration), then **look at** the contact sheet `qa/scenes/<scene>-contact.jpg`
+     and the snapshots, and read the scene's beats in script.md. For sync, take snapshots at cue times:
      `bin/yt scene snap <slug> <scene> --at 1.2,3.4` (→ `qa/scenes/<scene>-at/`; it queues for a CPU slot).
+     Judge by eye, as a viewer would. Don't dump frames, sweep for frozen frames, count pixels or
+     build geometry probes: a fault you can only find that way is not one a viewer sees. If two
+     snapshots leave you unsure what happens between them, snap a few more moments there.
    - final cut: the **assembled film only** — `qa/final-qa.json` (loudness, peaks, black frames, dead
      air, sync), `qa/final-contact.jpg`, the cuts between scenes, pacing, captions. Each scene's
      internals already passed its own review: don't re-audit them unless final QA flags that scene.
@@ -43,9 +49,13 @@ The showrunner asks for one of two things:
    would experience), `fix` (a concrete instruction the maker can execute).
    - **blocker**: it can't ship — a factual error, a broken or glitching render, missing captions,
      unreadable or masked narration.
-   - **major**: a viewer would clearly notice and it hurts the video — a visual that contradicts or
-     lags the narration, a confusing beat, a jarring cut.
-   - **minor**: polish and taste. Recorded, never sent back. Don't promote taste to major.
+   - **major**: a viewer would clearly notice it on one watch at normal speed, and it hurts the video —
+     a visual that contradicts or lags the narration, text that can't be read in time, elements
+     colliding, a confusing beat, a jarring cut, a picture that sits still for more than 2 s while the
+     narration moves on (`scene-animation` craft checklist).
+   - **minor**: polish and taste, and anything found only by stepping through frames or measuring
+     pixels (a short still beat, a one-frame jump). Recorded, never sent back. Don't promote taste to
+     major.
 5. Write `episodes/<slug>/qa/<stage>-review.json`:
 ```json
 {

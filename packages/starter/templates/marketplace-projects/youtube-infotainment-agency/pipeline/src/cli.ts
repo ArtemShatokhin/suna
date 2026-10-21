@@ -7,6 +7,7 @@
 import { existsSync } from "node:fs";
 import { applyFactCheck, primaryShare } from "./claims";
 import { channel } from "./config";
+import { stageVerdict } from "./critic";
 import {
   completeStage, decideGate, failStage, loadEpisode, newEpisode, nextAction, reopen, saveEpisode, stageTimings, startStage,
   STAGES, totalCost, GATES, type Gate, type Stage,
@@ -16,7 +17,7 @@ import { load, writeJson, writeText } from "./lib/io";
 import { ep, episodesDir } from "./lib/paths";
 import { qaFinal } from "./qa";
 import { assemble, prepareSound } from "./render";
-import { Brief, Claims, FactCheck, Review, reviewVerdict, Script } from "./schemas";
+import { Brief, Claims, FactCheck, Script } from "./schemas";
 import { buildScene, checkScene, retimeScenes, scaffoldScene, snapScene, windows } from "./scenes";
 import { lintScript, scriptMarkdown } from "./script";
 import { writeSources } from "./sources";
@@ -49,6 +50,7 @@ Episode state
 
 Gates (human review via the Kortix review inbox)
   yt review verdict <slug> <stage>            pass/fail by the pipeline's rule: no auto-fail, blocker or major
+                                              (scenes: combines qa/scenes-<scene>-review.json; failing lists scenes)
   yt gate request <slug> <gate> [--submit]    write qa/gate-<gate>.md; --submit sends it to \`kortix review\`
   yt gate sync <slug>                         pull verdicts from the review inbox
   yt gate approve|reject <slug> <gate> --by <who> [--note ..]
@@ -194,7 +196,7 @@ async function main() {
 
     case "review": {
       // The pass/fail decision for a critic review, by the pipeline's rule (not the critic's own flag).
-      if (sub === "verdict") return out(reviewVerdict(load(Review, ep(need(a1, "slug")).review(need(a2, "stage")))));
+      if (sub === "verdict") return out(stageVerdict(need(a1, "slug"), need(a2, "stage")));
       throw new Error(`unknown: review ${sub}`);
     }
 

@@ -67,7 +67,8 @@ renders scenes concurrently within those slots.
 ## 3. Critic loop (stages with a rubric: topic, research, script, storyboard, scenes, render, package)
 1. **Review**: dispatch **critic** with the slug, stage, rubric path and the artifacts to judge. It
    writes `qa/<stage>-review.json`. For scenes, one critic task **per scene**, all in one message
-   (`qa/scenes-<scene>-review.json`), then an aggregate `qa/scenes-review.json`.
+   (`qa/scenes-<scene>-review.json`); `bin/yt review verdict <slug> scenes` combines them, so no
+   aggregate file is needed, and its `failing` lists the scenes to fix.
 2. **Verdict**: `bin/yt review verdict <slug> <stage>` decides, not the critic's own `pass` field.
    A stage passes when there is no auto-fail, blocker or major issue. Scores are feedback, never a gate.
    Pass → complete the stage with `--score <overall>`. Minor issues are **not sent back**: they stay in
@@ -79,6 +80,9 @@ renders scenes concurrently within those slots.
    does not re-score from scratch or hunt for new minor issues. Then back to step 2.
 5. Max `critic.max_revisions` (3) fix → re-check loops; then `bin/yt episode fail <slug> <stage> --note
    "<top issues>"` and escalate to the human via a review item. Never let the maker grade itself.
+6. **Scenes get `critic.scene_fix_rounds` (1) fix → re-check round per scene.** If a scene still has a
+   major after it, don't send it back again: complete the stage. The final gate packet lists every
+   scene's open issues, and the human decides there.
 
 ## 4. Stage → agent map (also in `bin/yt episode next`)
 | stage | agent | notes |

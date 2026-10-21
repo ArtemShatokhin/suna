@@ -65,6 +65,9 @@ critic:
   # A stage passes when the critic finds no auto-fail, blocker or major issue (`yt review verdict`).
   # Scores are feedback only; minor issues are recorded, not sent back.
   max_revisions: 3 # revise → re-check loops before escalating to a human
+  # Scenes get this many fix → re-check rounds per scene; issues still open after them go to the final
+  # gate packet for the human instead of another round.
+  scene_fix_rounds: 1
 
 # Parallel work: agents run independent stages and scenes at the same time; CPU-heavy HyperFrames jobs
 # (render, check, snapshot) queue for a slot. Slots = min(vCPUs / cores, RAM / memory_gb), so 3 on the

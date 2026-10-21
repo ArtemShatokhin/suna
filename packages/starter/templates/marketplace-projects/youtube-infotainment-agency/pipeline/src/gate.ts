@@ -5,6 +5,7 @@
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { brollBudget } from "./broll";
+import { stageReviews } from "./critic";
 import { loadEpisode, requestGate, decideGate, saveEpisode, totalCost, type Gate } from "./episode";
 import { readReview, submitReview } from "./lib/review";
 import { load, readJson, writeText } from "./lib/io";
@@ -17,16 +18,16 @@ import { primaryShare } from "./claims";
 const STAGE_FOR_GATE: Record<Gate, string> = { topic: "topic", script: "script", storyboard: "storyboard", final: "render" };
 
 function reviewSection(slug: string, stage: string): string[] {
-  const f = ep(slug).review(stage);
-  if (!existsSync(f)) return ["_No critic review on file._", ""];
-  const r = load(Review, f);
-  return [
+  const reviews = stageReviews(slug, stage);
+  if (!reviews.length) return ["_No critic review on file._", ""];
+  return reviews.flatMap(({ id, review: r }) => [
+    ...(id === stage ? [] : [`### ${id}`, ""]),
     `**Critic:** ${r.overall.toFixed(1)}/5 — ${reviewVerdict(r).pass ? "PASS" : "FAIL"}${r.auto_fail.length ? ` (auto-fail: ${r.auto_fail.join("; ")})` : ""}`,
     "",
     ...Object.entries(r.scores).map(([k, v]) => `- ${k}: ${v}/5`),
     "",
     ...(r.issues.length ? ["Open issues:", ...r.issues.map((i) => `- [${i.severity}] ${i.where}: ${i.problem} → ${i.fix}`), ""] : []),
-  ];
+  ]);
 }
 
 export function packet(slug: string, gate: Gate): string {
@@ -82,8 +83,12 @@ export function packet(slug: string, gate: Gate): string {
   }
 
   L.push("## Critic review", "", ...reviewSection(slug, STAGE_FOR_GATE[gate]));
-  // The final gate judges the whole episode, so the packaging verdict belongs in the packet too.
-  if (gate === "final") L.push("## Package critic review", "", ...reviewSection(slug, "package"));
+  // The final gate judges the whole episode, so the scene and packaging verdicts belong in the packet too:
+  // scene issues still open after `critic.scene_fix_rounds` are the human's call here.
+  if (gate === "final") {
+    L.push("## Scenes critic review", "", ...reviewSection(slug, "scenes"));
+    L.push("## Package critic review", "", ...reviewSection(slug, "package"));
+  }
   // Optional showrunner notes: qa/gate-<gate>-notes.md (deviations, decisions for the human, paths).
   const notes = join(p.qa, `gate-${gate}-notes.md`);
   if (existsSync(notes)) L.push("## Showrunner notes", "", readFileSync(notes, "utf8"), "");

@@ -1,6 +1,13 @@
-import { describe, expect, test } from "bun:test";
+import { beforeEach, describe, expect, test } from "bun:test";
+import { channel } from "../src/config";
+import { stageVerdict } from "../src/critic";
+import { newEpisode, saveEpisode } from "../src/episode";
+import { packet } from "../src/gate";
+import { writeJson } from "../src/lib/io";
+import { ep } from "../src/lib/paths";
 import { parseShowOutput, parseSubmitOutput } from "../src/lib/review";
 import { Review, reviewVerdict } from "../src/schemas";
+import { tempEpisode } from "./helpers";
 
 describe("kortix review submit output", () => {
   test("reads review_item_id (what the CLI actually returns)", () => {
@@ -43,5 +50,43 @@ describe("critic verdict", () => {
   });
   test("an auto-fail fails it", () => {
     expect(reviewVerdict(Review.parse({ ...base, auto_fail: ["captions missing"] })).pass).toBe(false);
+  });
+});
+
+describe("scene reviews", () => {
+  const issue = (severity: "blocker" | "major" | "minor", problem = "p") => ({ severity, where: "4.2s", problem, fix: "f" });
+  const sceneReview = (overall: number, issues: ReturnType<typeof issue>[]) =>
+    Review.parse({ stage: "scenes", rubric: "rubrics/scene.md", reviewed_at: "2026-10-21T11:40:00Z", scores: { motion_quality: overall }, overall, pass: true, issues });
+  const save = (stage: string, r: Review) => writeJson(ep("_smoke").review(stage), r);
+
+  beforeEach(() => tempEpisode());
+
+  test("the verdict reads one review per scene; no aggregate file is needed", () => {
+    save("scenes-sc01", sceneReview(4, [issue("minor")]));
+    save("scenes-sc02", sceneReview(3, [issue("major")]));
+    expect(stageVerdict("_smoke", "scenes")).toMatchObject({ pass: false, blockers: 0, majors: 1, minors: 1, overall: 3.5, failing: ["sc02"] });
+  });
+  test("every scene passing passes the stage", () => {
+    save("scenes-sc01", sceneReview(4, []));
+    save("scenes-sc02", sceneReview(4.4, [issue("minor")]));
+    expect(stageVerdict("_smoke", "scenes")).toMatchObject({ pass: true, failing: [] });
+  });
+  test("other stages read their single review file", () => {
+    save("script", { ...sceneReview(4, [issue("major")]), stage: "script" });
+    expect(stageVerdict("_smoke", "script")).toMatchObject({ pass: false, majors: 1, failing: ["script"] });
+  });
+  test("no review on file is an error, not a pass", () => {
+    expect(() => stageVerdict("_smoke", "scenes")).toThrow(/no critic review/);
+  });
+  test("issues left open after the fix rounds reach the final gate packet", () => {
+    saveEpisode(newEpisode("_smoke", "t"));
+    save("scenes-sc02", sceneReview(3.7, [issue("major", "packets teleport on every loop")]));
+    const body = packet("_smoke", "final");
+    expect(body).toContain("## Scenes critic review");
+    expect(body).toContain("sc02");
+    expect(body).toContain("[major] 4.2s: packets teleport on every loop");
+  });
+  test("scenes get one fix round by default", () => {
+    expect(channel().critic.scene_fix_rounds).toBe(1);
   });
 });

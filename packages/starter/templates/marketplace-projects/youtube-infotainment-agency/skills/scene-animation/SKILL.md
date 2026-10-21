@@ -21,7 +21,9 @@ bin/yt scene scaffold <slug> <scene>      # creates 05-scenes/<scene>.html with 
 bin/yt scene check <slug> <scene>         # lint + runtime + layout + contrast + duration + snapshots
 ```
 Then **look at** `qa/scenes/<scene>-contact.jpg` (and the PNGs beside it) yourself before asking for
-review. Fix what you see; re-check. The critic reviews it against `rubrics/scene.md`.
+review; `bin/yt scene snap <slug> <scene> --at <t,…>` shows any other moment. Fix what you see;
+re-check. Judge by eye: no frame dumps, frozen-frame sweeps or pixel counts. The critic reviews it
+against `rubrics/scene.md`, as a viewer would watch it.
 
 ## Conventions (the kit contract)
 - Keep the scaffold's head: `kit/kit.css`, `kit/vendor/gsap.min.js`, `kit/kit.js`. No CDN links, no
@@ -47,7 +49,8 @@ review. Fix what you see; re-check. The critic reviews it against `rubrics/scene
 - One focal point per moment; clear the stage before the next idea.
 - Text appears on (or just before) its word and stays ≥ 0.35 s × words + 0.6 s.
 - Overlap and follow-through: stagger related elements (0.05–0.12 s), ease out on entry.
-- Something subtly alive in every frame; no dead holds > 2 s.
+- No dead holds: the picture never sits still for more than 2 s while the narration moves on. A short
+  still beat while the viewer reads is fine.
 - Labels sit next to what they label; arrows/lines `k-line`; nothing touches the frame edge.
 - Scale and data are honest; precise figures match claims.json.
 

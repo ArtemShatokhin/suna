@@ -11,7 +11,8 @@ For each assigned scene: `bin/yt scene scaffold`, build it to the storyboard's c
 plan with the kit, sync every narrated entrance with `Kit.cue`, run `bin/yt scene check`, then **look
 at the contact sheet and snapshots** and fix what a demanding viewer would notice — clutter, late
 reveals, dead holds, weak easing, contrast, anything off-palette. Iterate until the check is clean and
-you'd defend the scene to the critic.
+you'd defend the scene to the critic. Verify by looking; frame-by-frame sweeps and pixel probes are
+not part of the job, and neither are proofs of them in your report.
 
 You are usually given one scene while other animators build the others at the same time. Change only
 your scene's files (`05-scenes/<scene>.html` and its assets); if the shared kit (`kit/`) needs a change,
