@@ -5,8 +5,9 @@ The critic scores every stage output against the matching rubric and writes
 
 - Each criterion is scored **1–5** using the anchors (1 = amateur, 3 = solid YouTube, 5 = Kurzgesagt /
   Veritasium level). Score what is on the page, not what was intended.
-- `overall` = mean of criteria. `pass` = overall ≥ `channel.yaml → critic.pass_threshold` (4.0) **and**
-  no auto-fail **and** no `blocker` issue.
+- `overall` = mean of criteria. `pass` = no auto-fail **and** no `blocker` **and** no `major` issue
+  (`bin/yt review verdict` applies it). Scores are feedback for the maker, not the gate; `minor`
+  issues are recorded and never sent back.
 - Every score below 4 needs at least one issue with a concrete, actionable `fix`.
 - Auto-fails are listed per rubric; any one fails the review regardless of scores.
 

@@ -8,8 +8,10 @@ reports them missing.
    fetches `hyperframes`, `hyperframes-core`, `hyperframes-animation`, `hyperframes-keyframes`,
    `hyperframes-registry`, `hyperframes-cli`, `hyperframes-creative` and `hyperframes-audio` with the
    HyperFrames CLI, at the version `pipeline/package.json` pins, into `skills/`. Then run
-   `kortix validate`; it must pass. Commit `skills/` and open a change request ("Install HyperFrames
-   skills"). Sessions only see the skills once that change request is merged.
+   `kortix validate`; it must pass. A marketplace copy loses file permissions, so also restore the
+   executable bit: `chmod +x bin/yt scripts/*.sh && git update-index --chmod=+x bin/yt scripts/*.sh`.
+   Commit both and open a change request ("Install HyperFrames skills"). Sessions only see the skills
+   once that change request is merged.
 2. **Secrets.** `ELEVENLABS_API_KEY` is required (a paid ElevenLabs plan; Starter or above allows
    commercial use). Optional: the YouTube secrets (`YT_CLIENT_ID`, `YT_CLIENT_SECRET`, `YT_REFRESH_TOKEN`,
    `YT_API_KEY`), `MEDIA_S3_*` and `FAL_KEY` — see the README's Setup table. No model key is needed.

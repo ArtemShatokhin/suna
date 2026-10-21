@@ -1,6 +1,6 @@
 ---
 name: showrunner-loop
-description: The episode production loop. Load at the start of every showrunner session or tick — it defines how to start an episode, advance it one stage at a time with the `yt` state machine, dispatch stage agents, run the critic loop, request human gates, persist work across sandboxes, and recover from failures.
+description: The episode production loop. Load at the start of every showrunner session or tick — it defines how to start an episode, advance it with the `yt` state machine (every runnable stage at once), dispatch stage agents in parallel, run the critic loop with cheap re-checks, request human gates, persist work across sandboxes, and recover from failures.
 ---
 
 # Showrunner loop
@@ -34,18 +34,20 @@ bin/yt episode new 00N-short-slug --title "Working title"
 ```
 Slugs are `NNN-kebab-case` (next free number). Then dispatch **topic-scout** with the topic request.
 
-## 2. The tick: advance each active episode by at most one stage
+## 2. The tick: run everything that can run now
 ```
 bin/yt gate sync <slug>                 # pull human verdicts first
-bin/yt episode next <slug> --json       # → run_stage | await_gate | blocked | done
+bin/yt episode next <slug> --json       # → run_stage (+ also: […]) | await_gate | blocked | done
 ```
-- **run_stage** → `bin/yt episode start <slug> <stage>`, then dispatch the stage's agent (the `agent`
-  field) via the `task` tool with: the slug, the stage summary, the files it must produce, any human
-  gate notes / critic issues from the previous attempt, and "read your skills (`skills/<name>/SKILL.md`)
-  first". When the agent
-  returns, run the **critic loop** (§3) if the stage has a rubric, then:
-  `bin/yt episode complete <slug> <stage> --score <overall>` (it refuses if outputs are invalid — fix,
-  don't force). Save (persistence protocol).
+- **run_stage** → the stage in `stage` **and every stage in `also`** can run now: their inputs are
+  ready and they don't depend on each other (after the storyboard gate: scenes, sound and package).
+  `bin/yt episode start <slug> <stage>` for each, then dispatch all their agents **in one message**
+  (several `task` calls in one message run concurrently). Give each agent: the slug, the stage
+  summary, the files it must produce, any human gate notes / critic issues, and "read your skills
+  (`skills/<name>/SKILL.md`) first". As each returns, run its **critic loop** (§3) if the stage has a
+  rubric, then `bin/yt episode complete <slug> <stage> --score <overall>` (it refuses if outputs are
+  invalid — fix, don't force), save (persistence protocol) and call `next` again: a finished stage can
+  unblock the next one (render starts as soon as scenes and sound are both done) while others run.
 - Sessions run on **pi**: a subagent cannot start another subagent and cannot ask the user anything.
   So you dispatch the critic yourself (never ask a stage agent to), and when a stage agent's report
   contains a question for the human, put it to them (`kortix review submit --kind decision`) and
@@ -57,16 +59,25 @@ bin/yt episode next <slug> --json       # → run_stage | await_gate | blocked |
   --kind decision`) with options, and move on to other episodes.
 - **done** → nothing to do.
 
-Time-box: a tick should finish within ~3 h of sandbox time. Rendering (`render` stage) is the long
-pole (measured ~2.6× realtime on 4 vCPU; the `video` sandbox has 6); start it early in a session.
+Time-box: a tick should finish within ~3 h of sandbox time. Use `bin/yt episode timing <slug>` to see
+which stage is eating the time. Don't serialize CPU work yourself: every HyperFrames job (scene check,
+snapshot, render) waits for a free slot on its own (`channel.yaml → parallel`), and `bin/yt render`
+renders scenes concurrently within those slots.
 
 ## 3. Critic loop (stages with a rubric: topic, research, script, storyboard, scenes, render, package)
-1. Dispatch **critic** with the slug, stage, rubric path and the artifacts to judge. It writes
-   `qa/<stage>-review.json` (for scenes: one review per scene `qa/scenes-<scene>-review.json` plus
-   an aggregate `qa/scenes-review.json`).
-2. `pass` → complete the stage with `--score <overall>`.
-3. Not pass → send the issues back to the stage agent for a revision (same stage, same attempt), then
-   re-review. Max `critic.max_revisions` (3) loops; then `bin/yt episode fail <slug> <stage> --note
+1. **Review**: dispatch **critic** with the slug, stage, rubric path and the artifacts to judge. It
+   writes `qa/<stage>-review.json`. For scenes, one critic task **per scene**, all in one message
+   (`qa/scenes-<scene>-review.json`), then an aggregate `qa/scenes-review.json`.
+2. **Verdict**: `bin/yt review verdict <slug> <stage>` decides, not the critic's own `pass` field.
+   A stage passes when there is no auto-fail, blocker or major issue. Scores are feedback, never a gate.
+   Pass → complete the stage with `--score <overall>`. Minor issues are **not sent back**: they stay in
+   the review and go into the gate packet as "known polish items".
+3. **Fail** → send **only the blocker and major issues**, verbatim, back to the stage agent (same stage,
+   same attempt). Fix independent items in parallel when they touch different files or scenes.
+4. **Re-check, not re-review**: dispatch the critic with "re-check `qa/<stage>-review.json`": it verifies
+   each sent-back issue on the changed artifacts and runs the stage's `yt` checks for regressions. It
+   does not re-score from scratch or hunt for new minor issues. Then back to step 2.
+5. Max `critic.max_revisions` (3) fix → re-check loops; then `bin/yt episode fail <slug> <stage> --note
    "<top issues>"` and escalate to the human via a review item. Never let the maker grade itself.
 
 ## 4. Stage → agent map (also in `bin/yt episode next`)
@@ -78,10 +89,10 @@ pole (measured ~2.6× realtime on 4 vCPU; the `video` sandbox has 6); start it e
 | script | scriptwriter | `bin/yt script lint` must be clean; `bin/yt script md` → **script gate** |
 | voice | sound-editor | `bin/yt voice <slug>`; locks timing.json |
 | storyboard | art-director | storyboard.json + style frames → **storyboard gate** |
-| scenes | animator | one scene at a time (or child sessions per act); each passes `bin/yt scene check` + critic |
+| scenes | animator | **one animator task per scene, all dispatched together**; each passes `bin/yt scene check`, then one critic task per scene |
 | sound | sound-editor | sound.json; `bin/yt sound` |
-| render | (you) | `bin/yt render <slug>` then `bin/yt qa final <slug>`; critic on the final cut |
-| package | packager | package.json, thumbnail, `bin/yt sources`, `bin/yt thumb render` → **final gate** |
+| render | (you) | starts when scenes **and** sound are done: `bin/yt render <slug>` then `bin/yt qa final <slug>`; critic on the assembled cut |
+| package | packager | runs alongside scenes and sound: package.json, thumbnail, `bin/yt sources`, `bin/yt thumb render`; with render → **final gate** |
 | publish | publisher | private upload; schedule only after the final gate; sources page |
 | followup | publisher | analytics + corrections at day 2/7/28 |
 
@@ -92,16 +103,21 @@ pole (measured ~2.6× realtime on 4 vCPU; the `video` sandbox has 6); start it e
   note verbatim to that stage's agent. A script change after `voice` means re-voice → `bin/yt scene
   retime` → re-check scenes.
 
-## 6. Parallelism (optional, for long episodes)
-Scenes are independent once timing and storyboard are locked. Several `task` calls in one message
-run concurrently, so dispatch independent scenes (and their critic reviews) together. For >12 scenes, start child sessions
+## 6. Parallelism (the default)
+Waiting on a model is free for the sandbox; only HyperFrames jobs use its CPU, and they queue for slots
+by themselves. So run in parallel whenever inputs allow:
+- after the storyboard gate: **scenes ‖ sound ‖ package** (`also` in `episode next`);
+- inside scenes: one animator task per scene, then one critic task per scene, each batch in one message;
+- fixes and re-checks for independent scenes or files.
+Keep sequential only what depends on something unfinished. For >12 scenes, start child sessions
 per act (`kortix sessions new --agent showrunner -p "<slug>: dispatch the animator for scenes sc05–sc09
 only, critic each scene, then stop"`; stage agents are subagents and can't own a session), wait with
 `kortix sessions wait-for`, and merge their branches into `episode/<slug>`.
 
-## 7. Spend
-`bin/yt cost <slug>` tracks media API spend; Kortix billing tracks model spend. Mention both in the
-final gate. If an episode exceeds 2× the previous episode's spend, flag it.
+## 7. Spend and time
+`bin/yt cost <slug>` tracks media API spend; Kortix billing tracks model spend; `bin/yt episode timing
+<slug>` shows minutes per stage. Put all three in the final gate packet. If an episode exceeds 2× the
+previous episode's spend or time, flag it.
 
 ## Never
 - Never mark a stage done without `bin/yt episode complete` succeeding.

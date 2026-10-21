@@ -8,6 +8,18 @@ description: How to review a stage output against the channel rubrics and write 
 You are the quality bar. The maker is not allowed to grade its own work; you are. Your review decides
 whether the episode moves on, so it must be **specific, evidence-based and actionable**.
 
+A stage **passes when it has no auto-fail, no blocker and no major issue** (`bin/yt review verdict`
+applies this rule to your JSON). Scores are feedback for the maker, not the gate. Spend your effort on
+what decides pass/fail, and stop gathering evidence once you can decide it.
+
+The showrunner asks for one of two things:
+- **review**: a first look at a stage (the procedure below);
+- **re-check**: after a fix. Read the existing `qa/<stage>-review.json`, verify **each issue that was
+  sent back** on the changed artifacts (cite the frame, timestamp or line), and run the stage's `yt`
+  checks for regressions. Do not re-score from scratch or hunt for new minor issues; report a new
+  blocker or major only if the fix caused it. Rewrite the review with the issues that remain, and keep
+  the scores unless the fix changed them.
+
 ## Procedure
 1. Read the rubric (`rubrics/<stage>.md`) and `rubrics/README.md`. Read the channel bible pages that
    apply (`channel/brand.md` for editorial, `channel/design.md` for visuals, `channel/audio.md` for
@@ -19,15 +31,21 @@ whether the episode moves on, so it must be **specific, evidence-based and actio
    - scenes: `bin/yt scene check <slug> <scene> --json` output, then **look at** the contact sheet
      `qa/scenes/<scene>-contact.jpg` and individual snapshots; read the scene's beats in script.md.
      Take extra snapshots at cue times when sync matters:
-     `pipeline/node_modules/.bin/hyperframes snapshot build/<slug>/scenes/<scene> --at 1.2,3.4 -o /tmp/snap --describe false`.
-   - final cut: `qa/final-qa.json`, `qa/final-contact.jpg`, every scene review, captions.
+     `bin/yt scene snap <slug> <scene> --at 1.2,3.4` (→ `qa/scenes/<scene>-at/`; it queues for a CPU slot).
+   - final cut: the **assembled film only** — `qa/final-qa.json` (loudness, peaks, black frames, dead
+     air, sync), `qa/final-contact.jpg`, the cuts between scenes, pacing, captions. Each scene's
+     internals already passed its own review: don't re-audit them unless final QA flags that scene.
    - packaging: `qa/thumbnail-preview.jpg` **and** `qa/thumbnail-small.png` (judge at 160 px),
      description.txt, `bin/yt youtube search` results if available.
 3. Score every criterion 1–5 using the anchors. Be calibrated: 3 is "solid YouTube", 5 is the best
    channel on the platform. Most first drafts are 3s. Do not inflate.
-4. Write issues: `severity` (blocker = must fix before anything ships; major = fix now; minor = fix if
-   cheap), `where` (beat/scene id, timestamp, element), `problem` (what a viewer would experience),
-   `fix` (a concrete instruction the maker can execute).
+4. Write issues: `severity`, `where` (beat/scene id, timestamp, element), `problem` (what a viewer
+   would experience), `fix` (a concrete instruction the maker can execute).
+   - **blocker**: it can't ship — a factual error, a broken or glitching render, missing captions,
+     unreadable or masked narration.
+   - **major**: a viewer would clearly notice and it hurts the video — a visual that contradicts or
+     lags the narration, a confusing beat, a jarring cut.
+   - **minor**: polish and taste. Recorded, never sent back. Don't promote taste to major.
 5. Write `episodes/<slug>/qa/<stage>-review.json`:
 ```json
 {
@@ -38,7 +56,7 @@ whether the episode moves on, so it must be **specific, evidence-based and actio
   "evidence": ["qa/scenes/sc03-contact.jpg"]
 }
 ```
-   `overall` = mean of scores, rounded to 0.1. `pass` = overall ≥ 4.0 and no auto-fail and no blocker.
+   `overall` = mean of scores, rounded to 0.1. `pass` = no auto-fail, no blocker and no major issue.
 
 ## Calibration notes
 - Accuracy problems are always blockers.

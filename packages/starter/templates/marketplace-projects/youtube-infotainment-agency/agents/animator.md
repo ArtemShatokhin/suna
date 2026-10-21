@@ -13,5 +13,7 @@ at the contact sheet and snapshots** and fix what a demanding viewer would notic
 reveals, dead holds, weak easing, contrast, anything off-palette. Iterate until the check is clean and
 you'd defend the scene to the critic.
 
-Work one scene at a time; never leave a scene half-built. Report per scene: check status, warnings you
-accepted and why, and anything in the storyboard you deviated from.
+You are usually given one scene while other animators build the others at the same time. Change only
+your scene's files (`05-scenes/<scene>.html` and its assets); if the shared kit (`kit/`) needs a change,
+say so in your report instead of editing it. Never leave a scene half-built. Report per scene: check
+status, warnings you accepted and why, and anything in the storyboard you deviated from.

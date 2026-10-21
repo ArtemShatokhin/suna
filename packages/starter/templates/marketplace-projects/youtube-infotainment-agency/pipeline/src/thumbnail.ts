@@ -1,6 +1,6 @@
 import { copyFileSync, existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
-import { hyperframes, run } from "./lib/exec";
+import { hyperframes, run, runHeavy } from "./lib/exec";
 import { ensureDir, writeText } from "./lib/io";
 import { ep, KIT } from "./lib/paths";
 import { buildProject, contactSheet } from "./scenes";
@@ -22,7 +22,7 @@ export async function renderThumbnail(slug: string) {
   const dir = buildProject(p.thumbnailHtml, join(p.build, "thumbnail"), join(p.media, "thumbnail-assets"));
   const out = join(p.build, "thumbnail", "snap");
   ensureDir(out);
-  await run([...hyperframes(), "snapshot", dir, "--at", "0.5", "--no-end", "-o", out, "--describe", "false"]);
+  await runHeavy([...hyperframes(), "snapshot", dir, "--at", "0.5", "--no-end", "-o", out, "--describe", "false"]);
   const png = readdirSync(out).filter((f) => f.endsWith(".png")).map((f) => join(out, f))[0];
   if (!png) throw new Error("thumbnail snapshot produced no PNG");
   ensureDir(p.media);

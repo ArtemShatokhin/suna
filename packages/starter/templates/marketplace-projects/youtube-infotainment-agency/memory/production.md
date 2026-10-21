@@ -70,10 +70,11 @@ trap that cost real debugging time; numbers are measurements from that productio
 - **A camera "wide view" needs a world bigger than the frame**: draw the room at the widest view's size
   (1920/scale × 1080/scale) so the frame is all world at the widest point.
 - **Frozen-frame evidence must quote its settings and the longest run**, not a minimum: sampling every
-  0.6 s can hide a 0.18 s park. Sweep at a fixed fps over the whole window.
-- **Styleframes are verifiable without eyes**: build the still as a composition, `hyperframes snapshot
-  --at <t> --no-end`, `hyperframes check` for contrast, OCR every label, and print a quantised luminance
-  map to see composition and collisions.
+  0.6 s can hide a 0.18 s park. When a frozen hold is suspected, sweep at a fixed fps over that window.
+- **Look at frames first**: the default models read images, so judge snapshots and contact sheets by
+  eye. Only when the image tool can't open a PNG, verify a still without eyes: build it as a
+  composition, `hyperframes snapshot --at <t> --no-end`, `hyperframes check` for contrast, OCR the
+  labels, and print a quantised luminance map to see composition and collisions.
 
 ## Timing and re-voices
 - **Timing is narration-first**: voice before storyboard; scene durations derive from beats; `yt scene

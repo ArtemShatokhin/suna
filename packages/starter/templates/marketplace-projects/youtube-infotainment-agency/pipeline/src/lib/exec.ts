@@ -1,5 +1,7 @@
-import { existsSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { cpus, tmpdir, totalmem } from "node:os";
 import { join } from "node:path";
+import { channel } from "../config";
 import { PIPELINE } from "./paths";
 
 export interface RunResult {
@@ -31,6 +33,72 @@ export async function run(
   }
   return { code, stdout, stderr };
 }
+
+// ─── Heavy-job slots ─────────────────────────────────────────────────────────
+// Stage agents run in parallel inside one sandbox; HyperFrames jobs each need ~1.65 cores and ~1.4 GB
+// (channel.yaml → parallel.heavy_job). A counting lock shared by every `yt` process in the sandbox
+// (one directory per slot; mkdir is atomic) keeps them from piling up.
+
+/** How long a waiting job sleeps before trying the slots again. */
+const SLOT_POLL_MS = 500;
+
+/** How many heavy jobs this sandbox runs at once. */
+export function heavyJobSlots(): number {
+  const { cores, memory_gb } = channel().parallel.heavy_job;
+  return Math.max(1, Math.min(Math.floor(cpus().length / cores), Math.floor(totalmem() / 2 ** 30 / memory_gb)));
+}
+
+const slotsDir = () => process.env.YT_HEAVY_SLOTS_DIR ?? join(tmpdir(), "yt-heavy-slots");
+
+function alive(pid: number): boolean {
+  try {
+    process.kill(pid, 0);
+    return true;
+  } catch (e) {
+    return (e as NodeJS.ErrnoException).code === "EPERM";
+  }
+}
+
+function tryTake(slot: string): boolean {
+  try {
+    mkdirSync(slot);
+    writeFileSync(join(slot, "pid"), String(process.pid));
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+async function acquireSlot(): Promise<string> {
+  const dir = slotsDir();
+  mkdirSync(dir, { recursive: true });
+  for (;;) {
+    for (let i = 0; i < heavyJobSlots(); i++) {
+      const slot = join(dir, `slot-${i}`);
+      if (tryTake(slot)) return slot;
+      // A process that died mid-job leaves its slot behind; reclaim it.
+      const pid = Number(existsSync(join(slot, "pid")) ? readFileSync(join(slot, "pid"), "utf8") : 0);
+      if (pid && !alive(pid)) {
+        rmSync(slot, { recursive: true, force: true });
+        if (tryTake(slot)) return slot;
+      }
+    }
+    await Bun.sleep(SLOT_POLL_MS);
+  }
+}
+
+/** Run `fn` while holding one of the sandbox's heavy-job slots. */
+export async function withHeavySlot<T>(fn: () => Promise<T>): Promise<T> {
+  const slot = await acquireSlot();
+  try {
+    return await fn();
+  } finally {
+    rmSync(slot, { recursive: true, force: true });
+  }
+}
+
+/** `run` for CPU-heavy commands (HyperFrames render/check/snapshot): waits for a free slot first. */
+export const runHeavy: typeof run = (cmd, opts) => withHeavySlot(() => run(cmd, opts));
 
 /** The pinned HyperFrames CLI from pipeline/node_modules (falls back to npx). */
 export function hyperframes(): string[] {

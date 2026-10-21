@@ -1,5 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { parseShowOutput, parseSubmitOutput } from "../src/lib/review";
+import { Review, reviewVerdict } from "../src/schemas";
 
 describe("kortix review submit output", () => {
   test("reads review_item_id (what the CLI actually returns)", () => {
@@ -26,5 +27,21 @@ describe("kortix review show output", () => {
   });
   test("a pending item has no note and a needs_you status", () => {
     expect(parseShowOutput(JSON.stringify({ status: "needs_you" }))).toMatchObject({ verdict: "needs_you", note: undefined });
+  });
+});
+
+describe("critic verdict", () => {
+  const base = { stage: "script", rubric: "rubrics/script.md", reviewed_at: "2026-10-20T08:30:00Z", scores: { hook: 3 }, overall: 3.2, pass: false };
+  const issue = (severity: "blocker" | "major" | "minor") => ({ severity, where: "b02", problem: "p", fix: "f" });
+
+  test("a stage passes with minor issues only, whatever the scores", () => {
+    expect(reviewVerdict(Review.parse({ ...base, issues: [issue("minor"), issue("minor")] }))).toMatchObject({ pass: true, minors: 2 });
+  });
+  test("any major or blocker fails it, however high the scores", () => {
+    expect(reviewVerdict(Review.parse({ ...base, overall: 4.8, issues: [issue("major")] }))).toMatchObject({ pass: false, majors: 1 });
+    expect(reviewVerdict(Review.parse({ ...base, overall: 4.8, issues: [issue("blocker")] }))).toMatchObject({ pass: false, blockers: 1 });
+  });
+  test("an auto-fail fails it", () => {
+    expect(reviewVerdict(Review.parse({ ...base, auto_fail: ["captions missing"] })).pass).toBe(false);
   });
 });

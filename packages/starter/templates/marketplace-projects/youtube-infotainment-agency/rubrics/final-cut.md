@@ -1,5 +1,6 @@
 # Rubric — final cut (`build/<slug>/final.mp4`, judged on `qa/final-contact.jpg`, `qa/final-qa.json`,
-# scene contact sheets, and the script)
+# and the script). Judge the assembled film: cuts, mix, pacing, captions. Each scene's internals
+# already passed its own review; revisit one only when final QA flags it.
 
 | criterion | 1 | 3 | 5 |
 |---|---|---|---|

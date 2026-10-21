@@ -259,3 +259,14 @@ export const Review = z.object({
   evidence: z.array(z.string()).default([]).describe("Snapshot/contact-sheet paths the critic looked at."),
 });
 export type Review = z.infer<typeof Review>;
+
+/**
+ * The pass rule, decided here rather than trusted from the critic's own `pass` field: a stage passes
+ * when nothing would stop it shipping — no auto-fail, no blocker, no major. Scores are feedback only;
+ * minor issues are recorded, never sent back.
+ */
+export function reviewVerdict(r: Review) {
+  const count = (sev: "blocker" | "major" | "minor") => r.issues.filter((i) => i.severity === sev).length;
+  const blockers = count("blocker"), majors = count("major"), minors = count("minor");
+  return { pass: r.auto_fail.length === 0 && blockers === 0 && majors === 0, blockers, majors, minors, auto_fail: r.auto_fail, overall: r.overall };
+}

@@ -8,7 +8,7 @@ import { existsSync } from "node:fs";
 import { applyFactCheck, primaryShare } from "./claims";
 import { channel } from "./config";
 import {
-  completeStage, decideGate, failStage, loadEpisode, newEpisode, nextAction, reopen, saveEpisode, startStage,
+  completeStage, decideGate, failStage, loadEpisode, newEpisode, nextAction, reopen, saveEpisode, stageTimings, startStage,
   STAGES, totalCost, GATES, type Gate, type Stage,
 } from "./episode";
 import * as gate from "./gate";
@@ -16,8 +16,8 @@ import { load, writeJson, writeText } from "./lib/io";
 import { ep, episodesDir } from "./lib/paths";
 import { qaFinal } from "./qa";
 import { assemble, prepareSound } from "./render";
-import { Brief, Claims, FactCheck, Script } from "./schemas";
-import { buildScene, checkScene, retimeScenes, scaffoldScene, windows } from "./scenes";
+import { Brief, Claims, FactCheck, Review, reviewVerdict, Script } from "./schemas";
+import { buildScene, checkScene, retimeScenes, scaffoldScene, snapScene, windows } from "./scenes";
 import { lintScript, scriptMarkdown } from "./script";
 import { writeSources } from "./sources";
 import * as storage from "./storage";
@@ -38,14 +38,17 @@ Episode state
   yt episode new <slug> --title "<title>"     create episodes/<slug>/episode.yaml
   yt episode list                             all episodes and where they are
   yt episode status <slug> [--json]           stages, gates, spend
-  yt episode next <slug> [--json]             what should happen next (the showrunner's compass)
-  yt episode start <slug> <stage>             mark a stage in progress (checks predecessors + gates)
+  yt episode next <slug> [--json]             what should happen next (the showrunner's compass); \`also\` lists
+                                              stages that can run at the same time: dispatch them together
+  yt episode timing <slug>                    minutes per stage (all attempts) and the episode's wall clock
+  yt episode start <slug> <stage>             mark a stage in progress (checks its inputs + gates)
   yt episode complete <slug> <stage> [--score n] [--note ..]   validate outputs, mark done
   yt episode fail <slug> <stage> --note ..    record a failed attempt
-  yt episode reopen <slug> <stage> --note ..  re-open a stage and invalidate everything after it
+  yt episode reopen <slug> <stage> --note ..  re-open a stage and invalidate every stage that consumes it
   yt validate <slug> <stage>                  run a stage's exit checks without changing state
 
 Gates (human review via the Kortix review inbox)
+  yt review verdict <slug> <stage>            pass/fail by the pipeline's rule: no auto-fail, blocker or major
   yt gate request <slug> <gate> [--submit]    write qa/gate-<gate>.md; --submit sends it to \`kortix review\`
   yt gate sync <slug>                         pull verdicts from the review inbox
   yt gate approve|reject <slug> <gate> --by <who> [--note ..]
@@ -70,6 +73,7 @@ Voice, scenes, sound
   yt scene retime <slug>                      refresh CUES + durations after a voice change
   yt scene build <slug> <scene>               self-contained HyperFrames project in build/
   yt scene check <slug> <scene>               hyperframes check + duration lock + snapshots/contact sheet
+  yt scene snap <slug> <scene> --at 1.2,3.4   snapshots at given seconds → qa/scenes/<scene>-at/
   yt sound <slug> [--provider elevenlabs|stub] generate music cues + SFX (cached)
   yt broll budget <slug> | yt broll gen <slug> <scene>
 
@@ -137,6 +141,8 @@ async function main() {
   const { pos, flags } = parse(process.argv.slice(2));
   const [cmd, sub, a1, a2] = pos;
   const json = !!flags.json;
+  // `yt <anything> --help` must never run the command (`yt smoke --help` used to run the 2-min smoke).
+  if (flags.help || pos.includes("-h")) return out(HELP);
 
   switch (cmd) {
     case undefined:
@@ -159,6 +165,7 @@ async function main() {
       const st = loadEpisode(slug);
       if (sub === "status") return out(json ? st : statusTable(slug));
       if (sub === "next") return out(nextAction(st));
+      if (sub === "timing") return out(stageTimings(st));
       if (sub === "start") { startStage(st, asStage(a2)); saveEpisode(st); return out(nextAction(st)); }
       if (sub === "complete") {
         const stage = asStage(a2);
@@ -183,6 +190,12 @@ async function main() {
       out(findings.length ? findings : "ok");
       if (findings.some((f) => f.level === "error")) process.exitCode = 1;
       return;
+    }
+
+    case "review": {
+      // The pass/fail decision for a critic review, by the pipeline's rule (not the critic's own flag).
+      if (sub === "verdict") return out(reviewVerdict(load(Review, ep(need(a1, "slug")).review(need(a2, "stage")))));
+      throw new Error(`unknown: review ${sub}`);
     }
 
     case "gate": {
@@ -256,6 +269,7 @@ async function main() {
       }
       if (sub === "retime") return out(retimeScenes(slug));
       if (sub === "build") return out({ dir: buildScene(slug, need(a2, "scene")) });
+      if (sub === "snap") return out(await snapScene(slug, need(a2, "scene"), String(flags.at ?? "").split(",").filter(Boolean).map(Number)));
       if (sub === "check") {
         const res = await checkScene(slug, need(a2, "scene"), { frames: flags.frames ? Number(flags.frames) : undefined });
         out(json ? res : { ...res, hyperframes: { ...res.hyperframes, output: res.hyperframes.ok ? "(ok)" : res.hyperframes.output } });

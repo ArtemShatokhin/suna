@@ -6,7 +6,7 @@
 import { cpSync, existsSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { channel } from "./config";
-import { hyperframes, run } from "./lib/exec";
+import { hyperframes, run, runHeavy } from "./lib/exec";
 import { ensureDir, load, round, writeJson, writeText } from "./lib/io";
 import { ep, KIT, PIPELINE } from "./lib/paths";
 import { Storyboard, Timing } from "./schemas";
@@ -135,7 +135,7 @@ export async function checkScene(slug: string, sceneId: string, opts: { frames?:
   const declared = Number(ROOT_DUR_RE.exec(html)?.[2] ?? Number.NaN);
   const durationOk = Math.abs(declared - win.duration) < 1 / 30 + 1e-6;
 
-  const res = await run([...hyperframes(), "check", dir], { allowFail: true });
+  const res = await runHeavy([...hyperframes(), "check", dir], { allowFail: true });
   const output = (res.stdout + res.stderr).replace(/\x1b\[[0-9;]*m/g, "");
   const errors = [...output.matchAll(/(\d+) error\(s\)|(\d+) errors?,/g)].reduce((a, m) => a + Number(m[1] ?? m[2] ?? 0), 0);
   const warnings = [...output.matchAll(/(\d+) warning\(s\)|(\d+) warnings?\b/g)].reduce((a, m) => a + Number(m[1] ?? m[2] ?? 0), 0);
@@ -143,7 +143,7 @@ export async function checkScene(slug: string, sceneId: string, opts: { frames?:
   const snapDir = join(p.qa, "scenes", sceneId);
   rmSync(snapDir, { recursive: true, force: true });
   ensureDir(snapDir);
-  await run([...hyperframes(), "snapshot", dir, "--frames", String(opts.frames ?? 6), "-o", snapDir, "--describe", "false"], { allowFail: true });
+  await runHeavy([...hyperframes(), "snapshot", dir, "--frames", String(opts.frames ?? 6), "-o", snapDir, "--describe", "false"], { allowFail: true });
   const snapshots = existsSync(snapDir) ? readdirSync(snapDir).filter((f) => f.endsWith(".png")).sort().map((f) => join(snapDir, f)) : [];
   let contact: string | undefined;
   if (snapshots.length) {
@@ -163,6 +163,17 @@ export async function checkScene(slug: string, sceneId: string, opts: { frames?:
 }
 
 /** Tile images into one JPEG (a contact sheet the critic can read in one look). */
+/** Snapshots of a scene at given times (s), e.g. on cue words; queued like every HyperFrames job. */
+export async function snapScene(slug: string, sceneId: string, at: number[]): Promise<string[]> {
+  if (!at.length || at.some((t) => !Number.isFinite(t))) throw new Error("--at needs times in seconds, e.g. --at 1.2,3.4");
+  const dir = buildScene(slug, sceneId);
+  const out = join(ep(slug).qa, "scenes", `${sceneId}-at`);
+  rmSync(out, { recursive: true, force: true });
+  ensureDir(out);
+  await runHeavy([...hyperframes(), "snapshot", dir, "--at", at.join(","), "-o", out, "--describe", "false"]);
+  return readdirSync(out).filter((f) => f.endsWith(".png")).sort().map((f) => join(out, f));
+}
+
 export async function contactSheet(images: string[], out: string, cols = 4, width = 480) {
   ensureDir(join(out, ".."));
   const rows = Math.ceil(images.length / cols);

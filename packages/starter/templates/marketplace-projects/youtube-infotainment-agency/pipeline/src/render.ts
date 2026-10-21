@@ -8,7 +8,7 @@ import { channel } from "./config";
 import { addCost, loadEpisode, saveEpisode } from "./episode";
 import { makeMusic, makeSfx, usdEstimate, type GenProvider } from "./audio/sound";
 import { mixMaster, type Placed } from "./audio/mix";
-import { ffprobeDuration, hyperframes, run } from "./lib/exec";
+import { ffprobeDuration, hyperframes, run, runHeavy } from "./lib/exec";
 import { ensureDir, load, round, sha256, writeJson, writeText } from "./lib/io";
 import { ep } from "./lib/paths";
 import { Sound } from "./schemas";
@@ -34,24 +34,26 @@ export async function renderScenes(slug: string, opts: { draft?: boolean; only?:
   const v = channel().video;
   const outDir = join(p.build, "renders");
   ensureDir(outDir);
-  const results: { id: string; file: string; cached: boolean; duration: number; window: number }[] = [];
-  for (const win of wins) {
-    if (opts.only && !opts.only.includes(win.id)) continue;
+  // Scenes render concurrently; `runHeavy` caps how many HyperFrames renders share the sandbox at once.
+  const renderOne = async (win: (typeof wins)[number]) => {
     const dir = buildScene(slug, win.id);
     const quality = opts.draft ? "draft" : v.quality;
     const hash = sha256(hashDir(dir) + quality + v.fps).slice(0, 16);
     const file = join(outDir, `${win.id}-${hash}.mp4`);
-    let cached = existsSync(file);
+    const cached = existsSync(file);
     if (!cached) {
-      await run([...hyperframes(), "render", dir, "-o", file, "-f", String(v.fps), "-q", quality, "--quiet"]);
+      await runHeavy([...hyperframes(), "render", dir, "-o", file, "-f", String(v.fps), "-q", quality, "--quiet"]);
     }
     const duration = await ffprobeDuration(file);
     if (Math.abs(duration - win.duration) > 0.1) {
       throw new Error(`${win.id} rendered ${duration.toFixed(2)}s but its window is ${win.duration}s — check data-duration / CUES (yt scene retime)`);
     }
-    results.push({ id: win.id, file, cached, duration, window: win.duration });
-  }
-  return results;
+    return { id: win.id, file, cached, duration, window: win.duration };
+  };
+  const settled = await Promise.allSettled(wins.filter((w) => !opts.only || opts.only.includes(w.id)).map(renderOne));
+  const failed = settled.find((r): r is PromiseRejectedResult => r.status === "rejected");
+  if (failed) throw failed.reason;
+  return settled.map((r) => (r as PromiseFulfilledResult<Awaited<ReturnType<typeof renderOne>>>).value);
 }
 
 /** Generate music + SFX (cached), returning placed clips for the mix. */

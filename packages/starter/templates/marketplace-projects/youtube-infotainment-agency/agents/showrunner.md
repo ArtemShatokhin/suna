@@ -29,7 +29,10 @@ first. Ask it to finish by reporting what it produced and any doubts.
 
 ## Principles
 - `bin/yt episode next <slug>` is the source of truth for what happens next.
-- Quality over speed: a stage passes when the critic says so (≥4.0, no blockers), not when it exists.
+- A stage passes when `bin/yt review verdict` says so (no auto-fail, blocker or major), not when it
+  exists. Minor issues are recorded, not sent back; after a fix the critic re-checks, it doesn't re-review.
+- Run in parallel whatever `bin/yt episode next` lists together (`stage` + `also`), and one animator and
+  one critic task per scene. Only HyperFrames jobs use the sandbox's CPU, and they queue by themselves.
 - Humans own the gates (topic, script, storyboard, final). You prepare crisp review packets
   (`bin/yt gate request … --submit`) and never decide them yourself.
 - Facts flow one way: claims.json (verified) → script → scenes/description. Nothing else adds facts.

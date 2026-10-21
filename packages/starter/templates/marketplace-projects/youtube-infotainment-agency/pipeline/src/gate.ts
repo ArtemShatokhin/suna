@@ -9,7 +9,7 @@ import { loadEpisode, requestGate, decideGate, saveEpisode, totalCost, type Gate
 import { readReview, submitReview } from "./lib/review";
 import { load, readJson, writeText } from "./lib/io";
 import { ep } from "./lib/paths";
-import { Brief, Claims, Package, Review, Script, Storyboard, Timing } from "./schemas";
+import { Brief, Claims, Package, Review, reviewVerdict, Script, Storyboard, Timing } from "./schemas";
 import { lintScript } from "./script";
 import { sceneWindows } from "./timing";
 import { primaryShare } from "./claims";
@@ -21,7 +21,7 @@ function reviewSection(slug: string, stage: string): string[] {
   if (!existsSync(f)) return ["_No critic review on file._", ""];
   const r = load(Review, f);
   return [
-    `**Critic:** ${r.overall.toFixed(1)}/5 — ${r.pass ? "PASS" : "FAIL"}${r.auto_fail.length ? ` (auto-fail: ${r.auto_fail.join("; ")})` : ""}`,
+    `**Critic:** ${r.overall.toFixed(1)}/5 — ${reviewVerdict(r).pass ? "PASS" : "FAIL"}${r.auto_fail.length ? ` (auto-fail: ${r.auto_fail.join("; ")})` : ""}`,
     "",
     ...Object.entries(r.scores).map(([k, v]) => `- ${k}: ${v}/5`),
     "",
@@ -134,7 +134,8 @@ export function decideFromReview(slug: string, gate: Gate) {
   const state = loadEpisode(slug);
   if (state.gates[gate].mode === "human") throw new Error(`gate ${gate} is human-only`);
   const r = load(Review, ep(slug).review(STAGE_FOR_GATE[gate]));
-  decideGate(state, gate, r.pass, "critic", `overall ${r.overall}`);
+  const v = reviewVerdict(r);
+  decideGate(state, gate, v.pass, "critic", `overall ${r.overall}; ${v.blockers} blocker, ${v.majors} major`);
   saveEpisode(state);
-  return { gate, approved: r.pass, overall: r.overall };
+  return { gate, approved: v.pass, overall: r.overall };
 }
