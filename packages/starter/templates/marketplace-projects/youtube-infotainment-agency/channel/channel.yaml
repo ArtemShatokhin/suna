@@ -70,13 +70,19 @@ critic:
   scene_fix_rounds: 1
 
 # Parallel work: agents run independent stages and scenes at the same time; CPU-heavy HyperFrames jobs
-# (render, check, snapshot) queue for a slot. Slots = min(vCPUs / cores, RAM / memory_gb), so 3 on the
-# 6 vCPU / 12 GB video sandbox. Measured 2026-10-21: one scene render uses ~1.65 cores and ~1.4 GB peak;
-# beyond that many at once, extra jobs only queue for CPU (2 renders at once saved 17%, 6 saved 17%).
+# queue for a slot, one pool per kind. Slots = min(vCPUs / cores, RAM / memory_gb).
+# Renders: 3 on the 6 vCPU / 12 GB video sandbox. Measured 2026-10-21: one scene render uses ~1.65 cores
+# and ~1.4 GB peak; beyond that many at once, extra jobs only queue for CPU (2 at once saved 17%, 6 saved 17%).
+# Previews (`hyperframes check`, snapshots): 6 on the same sandbox. Measured 2026-10-21: a check uses
+# 0.6-0.9 cores and 0.84 GB peak, a 6-frame snapshot ~0.9 cores and 0.71 GB. With previews in the render
+# pool, six animators' checks averaged 26 s each in a test episode against 17 s alone.
 parallel:
   heavy_job:
     cores: 1.65
     memory_gb: 1.4
+  preview_job:
+    cores: 0.9
+    memory_gb: 0.84
 
 # Cost estimates for the ledger (USD). Tune to your plans; LLM spend is tracked by Kortix billing.
 rates:

@@ -5,10 +5,11 @@ import { join } from "node:path";
 import { channel, setChannel } from "../src/config";
 import { heavyJobSlots, withHeavySlot } from "../src/lib/exec";
 
-/** One heavy job's measured cost, scaled so the sandbox fits exactly `n` of them. */
-function fitSlots(n: number) {
+/** One job's measured cost, scaled so the sandbox fits exactly `n` renders (and `previews` previews). */
+function fitSlots(n: number, previews = n) {
   const cfg = structuredClone(channel());
   cfg.parallel.heavy_job.cores = cpus().length / n;
+  cfg.parallel.preview_job.cores = cpus().length / previews;
   setChannel(cfg);
 }
 
@@ -46,9 +47,20 @@ describe("heavy-job slots", () => {
 
   test("a slot left by a dead process is reclaimed", async () => {
     fitSlots(1);
-    const slot = join(process.env.YT_HEAVY_SLOTS_DIR!, "slot-0");
+    const slot = join(process.env.YT_HEAVY_SLOTS_DIR!, "render-0");
     mkdirSync(slot);
     writeFileSync(join(slot, "pid"), "999999999");
     expect(await withHeavySlot(async () => "ran")).toBe("ran");
+  });
+
+  test("previews (check, snapshot) have their own pool, sized by their own cost", async () => {
+    fitSlots(1, 2);
+    expect(heavyJobSlots("render")).toBe(1);
+    expect(heavyJobSlots("preview")).toBe(2);
+    const spans: [number, number][] = [];
+    const job = () => withHeavySlot(async () => { const s = Date.now(); await Bun.sleep(300); spans.push([s, Date.now()]); }, "preview");
+    await Promise.all([job(), job()]);
+    spans.sort((a, b) => a[0] - b[0]);
+    expect(spans[1]![0]).toBeLessThan(spans[0]![1]);
   });
 });

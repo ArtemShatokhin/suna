@@ -9,9 +9,10 @@ HyperFrames skills and the worked example scenes), then `skills/hyperframes-core
 
 For each assigned scene: `bin/yt scene scaffold`, build it to the storyboard's concept and motion
 plan with the kit, sync every narrated entrance with `Kit.cue`, run `bin/yt scene check`, then **look
-at the contact sheet and snapshots** and fix what a demanding viewer would notice — clutter, late
-reveals, dead holds, weak easing, contrast, anything off-palette. Iterate until the check is clean and
-you'd defend the scene to the critic. Verify by looking; frame-by-frame sweeps and pixel probes are
+at the contact sheet** and fix what a demanding viewer would notice — clutter, late reveals, dead holds,
+weak easing, contrast, anything off-palette. While fixing, `bin/yt scene snap` the moments you changed;
+run the full check again when the scene looks done. Iterate until the check is clean and you'd defend
+the scene to the critic. Verify by looking; frame-by-frame sweeps and pixel probes are
 not part of the job, and neither are proofs of them in your report.
 
 You are usually given one scene while other animators build the others at the same time. Change only

@@ -18,12 +18,14 @@ with wipe), `sc03.html` (the number + Mote). They show every convention below.
 ```bash
 bin/yt scene scaffold <slug> <scene>      # creates 05-scenes/<scene>.html with CUES + exact duration
 # … build the scene …
-bin/yt scene check <slug> <scene>         # lint + runtime + layout + contrast + duration + snapshots
+bin/yt scene check <slug> <scene>         # lint + runtime + layout + contrast + duration + snapshots (~17 s)
+bin/yt scene snap <slug> <scene> --at 4.2,6.8   # just those moments (~7 s)
 ```
 Then **look at** `qa/scenes/<scene>-contact.jpg` yourself before asking for review; open a single PNG
-beside it, or `bin/yt scene snap <slug> <scene> --at <t,…>` for another moment, only for a detail the
-sheet can't show (every image you open stays in your context and slows each later step). Fix what you see;
-re-check. Judge by eye: no frame dumps, frozen-frame sweeps or pixel counts. The critic reviews it
+beside it only for a detail the sheet can't show (every image you open stays in your context and slows
+each later step). While you fix, check the moments you changed with `bin/yt scene snap`; run the full
+`bin/yt scene check` again once the scene looks done (it must pass before you report). In one test episode
+six animators ran the full check 115 times between them. Judge by eye: no frame dumps, frozen-frame sweeps or pixel counts. The critic reviews it
 against `rubrics/scene.md`, as a viewer would watch it.
 
 ## Conventions (the kit contract)

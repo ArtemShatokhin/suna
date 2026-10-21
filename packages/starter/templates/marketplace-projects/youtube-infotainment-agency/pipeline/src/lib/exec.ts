@@ -43,8 +43,11 @@ export async function run(
 const SLOT_POLL_MS = 500;
 
 /** How many heavy jobs this sandbox runs at once. */
-export function heavyJobSlots(): number {
-  const { cores, memory_gb } = channel().parallel.heavy_job;
+/** Job kinds with their own slot pool: HyperFrames renders, and previews (check, snapshot). */
+export type HeavyJobKind = "render" | "preview";
+
+export function heavyJobSlots(kind: HeavyJobKind = "render"): number {
+  const { cores, memory_gb } = kind === "render" ? channel().parallel.heavy_job : channel().parallel.preview_job;
   return Math.max(1, Math.min(Math.floor(cpus().length / cores), Math.floor(totalmem() / 2 ** 30 / memory_gb)));
 }
 
@@ -69,12 +72,12 @@ function tryTake(slot: string): boolean {
   }
 }
 
-async function acquireSlot(): Promise<string> {
+async function acquireSlot(kind: HeavyJobKind): Promise<string> {
   const dir = slotsDir();
   mkdirSync(dir, { recursive: true });
   for (;;) {
-    for (let i = 0; i < heavyJobSlots(); i++) {
-      const slot = join(dir, `slot-${i}`);
+    for (let i = 0; i < heavyJobSlots(kind); i++) {
+      const slot = join(dir, `${kind}-${i}`);
       if (tryTake(slot)) return slot;
       // A process that died mid-job leaves its slot behind; reclaim it.
       const pid = Number(existsSync(join(slot, "pid")) ? readFileSync(join(slot, "pid"), "utf8") : 0);
@@ -87,9 +90,9 @@ async function acquireSlot(): Promise<string> {
   }
 }
 
-/** Run `fn` while holding one of the sandbox's heavy-job slots. */
-export async function withHeavySlot<T>(fn: () => Promise<T>): Promise<T> {
-  const slot = await acquireSlot();
+/** Run `fn` while holding one of the sandbox's slots for this kind of job. */
+export async function withHeavySlot<T>(fn: () => Promise<T>, kind: HeavyJobKind = "render"): Promise<T> {
+  const slot = await acquireSlot(kind);
   try {
     return await fn();
   } finally {
@@ -97,8 +100,11 @@ export async function withHeavySlot<T>(fn: () => Promise<T>): Promise<T> {
   }
 }
 
-/** `run` for CPU-heavy commands (HyperFrames render/check/snapshot): waits for a free slot first. */
-export const runHeavy: typeof run = (cmd, opts) => withHeavySlot(() => run(cmd, opts));
+/** `run` for a HyperFrames render: waits for a free render slot first. */
+export const runHeavy: typeof run = (cmd, opts) => withHeavySlot(() => run(cmd, opts), "render");
+
+/** `run` for a HyperFrames check or snapshot: waits for a free preview slot first. */
+export const runPreview: typeof run = (cmd, opts) => withHeavySlot(() => run(cmd, opts), "preview");
 
 /** The pinned HyperFrames CLI from pipeline/node_modules (falls back to npx). */
 export function hyperframes(): string[] {

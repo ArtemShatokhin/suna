@@ -70,13 +70,17 @@ export const ChannelConfig = z.object({
   gates: z.object({ topic: GateMode, script: GateMode, storyboard: GateMode, final: GateMode }),
   critic: z.object({ max_revisions: z.number().default(3), scene_fix_rounds: z.number().int().min(0).default(1) }),
   /**
-   * Agents run stages and scenes in parallel; CPU-heavy HyperFrames jobs (render, check, snapshot) share
-   * the sandbox through `withHeavySlot`. Slots = min(cores / heavy_job.cores, RAM / heavy_job.memory_gb).
+   * Agents run stages and scenes in parallel; CPU-heavy HyperFrames jobs share the sandbox through
+   * `withHeavySlot`, one pool per kind: renders (`heavy_job`) and previews (`preview_job`: check, snapshot).
+   * Slots = min(cores / job.cores, RAM / job.memory_gb).
    */
   parallel: z
     .object({
       heavy_job: z
         .object({ cores: z.number().positive().default(1.65), memory_gb: z.number().positive().default(1.4) })
+        .prefault({}),
+      preview_job: z
+        .object({ cores: z.number().positive().default(0.9), memory_gb: z.number().positive().default(0.84) })
         .prefault({}),
     })
     .prefault({}),
