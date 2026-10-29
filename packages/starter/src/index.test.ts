@@ -18,7 +18,7 @@ function byPath(files: StarterFile[]): Map<string, string> {
 }
 
 describe('STARTER_TEMPLATE_IDS', () => {
-  test('contains the two OpenCode templates', () => {
+  test('contains the two starter templates', () => {
     expect([...STARTER_TEMPLATE_IDS]).toEqual([
       'minimal',
       'general-knowledge-worker',
@@ -263,20 +263,17 @@ describe('getStarterFiles', () => {
     ].sort());
   });
 
-  test('minimal starter includes the runtime plugin but no tool copies or optional marketplace skills', () => {
+  test('minimal starter ships no harness folder, no tool copies and no optional marketplace skills', () => {
     const files = getStarterFiles({ projectName: 'X', template: 'minimal' });
     const paths = new Set(files.map((f) => f.path));
 
-    // The Kortix tools (show, memory, web_search, …) are hosted by the runtime on every harness.
-    expect([...paths].filter((path) => path.startsWith('harnesses/opencode/tools/'))).toEqual([]);
+    // The Kortix tools (show, memory, web_search, …) are hosted by the runtime.
+    expect([...paths].filter((path) => path.startsWith('tools/') || path.startsWith('harnesses/'))).toEqual([]);
     // `kortix-cli` is the sole managed skill left in the scaffold; the rest of the
     // `kortix-*` family lives in `templates/managed/` and is injected at boot.
     expect(paths.has('skills/kortix-cli/SKILL.md')).toBe(true);
     expect(paths.has('skills/kortix-system/SKILL.md')).toBe(false);
     expect(paths.has('skills/agent-browser/SKILL.md')).toBe(false);
-    expect(paths.has('harnesses/opencode/plugins/pty.ts')).toBe(true);
-    expect(paths.has('harnesses/opencode/plugins/opencode-pty/src/plugin/pty/manager.ts')).toBe(true);
-    expect(paths.has('harnesses/opencode/plugins/lib/tool.ts')).toBe(true);
   });
 
   test('marketplace source contains optional first-party skills only', () => {
@@ -306,6 +303,7 @@ describe('KORTIX_MANAGED_SKILL_NAMES', () => {
       'kortix-channel-memory',
       'kortix-computer',
       'kortix-connectors',
+      'kortix-design',
       'kortix-drives',
       'kortix-genui',
       'kortix-goals',
@@ -481,12 +479,33 @@ describe('marketplace projects — full project templates', () => {
    * than a wall of half-relevant verticals, and the synthetic starter item is
    * built in the API catalog, not from this root.
    *
-   * The `registry:project` machinery itself stays — this root is the extension
-   * point for bundling an example project again — so the contract worth pinning
-   * is that an EMPTY root degrades cleanly instead of throwing the catalog build.
+   * The root is the extension point for bundling an example project, and holds
+   * one again: the YouTube Infotainment Agency. Its files are slug-prefixed,
+   * carry a `project.json` the catalog reads for title/description, and are
+   * text only — every template file is read as UTF-8.
    */
-  test('an empty project-template root yields no files and does not throw', () => {
-    expect(() => getProjectTemplateFiles()).not.toThrow();
-    expect(getProjectTemplateFiles()).toEqual([]);
+  test('bundles the YouTube Infotainment Agency project template', () => {
+    const files = getProjectTemplateFiles();
+    const slugs = new Set(files.map((f) => f.path.split('/')[0]));
+    expect([...slugs]).toEqual(['youtube-infotainment-agency']);
+    const meta = files.find((f) => f.path === 'youtube-infotainment-agency/project.json');
+    expect(JSON.parse(meta!.content)).toMatchObject({ title: 'YouTube Infotainment Agency' });
+    for (const required of ['kortix.yaml', 'README.md', 'install.md']) {
+      expect(files.some((f) => f.path === `youtube-infotainment-agency/${required}`)).toBe(true);
+    }
+    for (const f of files) expect(f.content).not.toContain('\uFFFD');
+  });
+
+  /**
+   * Daytona refuses a snapshot whose disk exceeds its per-sandbox cap ("Disk
+   * request 60GB exceeds maximum allowed per sandbox (40GB)"), so every session
+   * of a cloned agency stalled in provisioning (2026-10-27).
+   */
+  test('the agency sandbox templates fit Daytona per-sandbox disk cap', () => {
+    const DAYTONA_MAX_DISK_GB = 40;
+    const manifest = getProjectTemplateFiles().find((f) => f.path === 'youtube-infotainment-agency/kortix.yaml');
+    const disks = [...(manifest?.content ?? '').matchAll(/^\s+disk:\s*(\d+)/gm)].map((m) => Number(m[1]));
+    expect(disks.length).toBeGreaterThan(0);
+    for (const disk of disks) expect(disk).toBeLessThanOrEqual(DAYTONA_MAX_DISK_GB);
   });
 });
