@@ -704,7 +704,7 @@ export class PiRuntime {
         // `sessionId` names the thread, so a Claude subscription model keeps one Claude session per thread.
         streamFn: withAgentSampling(
           (model, context, options) => this.models!.models.streamSimple(model, context, { ...options, sessionId: this.rootId }),
-          () => this.sampling(this.compiledAgent(), this.selected!),
+          () => this.sampling(this.compiledAgent(), this.selected!, this.turnParent ?? undefined),
         ),
         convertToLlm,
         toolExecution: 'parallel',
@@ -2075,7 +2075,7 @@ export class PiRuntime {
     const agent = new core.Agent({
       streamFn: withAgentSampling(
         (m, context, options) => this.models!.models.streamSimple(m, context, { ...options, sessionId: child.id }),
-        () => this.sampling(this.compiled?.agent?.[input.agent], selected),
+        () => this.sampling(this.compiled?.agent?.[input.agent], selected, messageId),
       ),
       toolExecution: 'sequential',
       initialState: {
@@ -2325,12 +2325,15 @@ export class PiRuntime {
     this.rebuildSystemPrompt()
   }
 
-  /** An agent's `temperature`, `top_p` and `steps` for its requests on `model`. */
-  private sampling(agent: CompiledAgent | undefined, model: SelectedModel) {
+  /** An agent's `temperature`, `top_p`, `steps` and current run id for its requests on `model`.
+   *  `runId` is the prompt message id of the run in flight; the step counter resets when it
+   *  changes (a new turn or sub-agent invocation) and holds across compaction within a run. */
+  private sampling(agent: CompiledAgent | undefined, model: SelectedModel, runId: string | undefined) {
     return {
       temperature: agent?.temperature,
       top_p: agent?.top_p,
       steps: agent?.steps,
+      runId,
       acceptsTemperature: this.models?.catalog[model.modelID]?.temperature !== false,
     }
   }
